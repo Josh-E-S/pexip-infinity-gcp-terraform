@@ -1,0 +1,3 @@
+pexip_version          = "36"
+pexip_mgr_image_source = "path/to/Pexip_Infinity_v36_GCP_pxMgr.tar.gz"
+pexip_conf_image_source = "path/to/Pexip_Infinity_v36_GCP_ConfNode.tar.gz"
