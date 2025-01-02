@@ -1,53 +1,91 @@
-# Create GCS bucket for Pexip images
+# Storage bucket for Pexip disk images
 resource "google_storage_bucket" "pexip_images" {
-  name          = "${var.pexip_images_bucket}-${var.pexip_version}"
+  name          = "${var.project_id}-${var.pexip_images_bucket}"
   location      = var.storage_bucket_location
   force_destroy = true
-
   uniform_bucket_level_access = true
 
-  lifecycle_rule {
-    condition {
-      age = 7 # Keep images for 7 days
-    }
-    action {
-      type = "Delete"
-    }
-  }
+  labels = merge(var.labels, {
+    environment = var.environment
+    managed-by  = "terraform"
+  })
 }
 
-# Upload Management Node image
-resource "google_storage_bucket_object" "mgr_image" {
-  name   = basename(var.pexip_mgr_image_source)
+# Upload Management Node image to Cloud Storage
+resource "google_storage_bucket_object" "mgmt_node_image" {
+  name   = "pexip-mgr-v${var.pexip_version}.tar.gz"
   source = var.pexip_mgr_image_source
   bucket = google_storage_bucket.pexip_images.name
+
+  depends_on = [google_storage_bucket.pexip_images]
 }
 
-# Upload Conference Node image
-resource "google_storage_bucket_object" "conf_image" {
-  name   = basename(var.pexip_conf_image_source)
+# Upload Conference Node image to Cloud Storage
+resource "google_storage_bucket_object" "conf_node_image" {
+  name   = "pexip-conf-v${var.pexip_version}.tar.gz"
   source = var.pexip_conf_image_source
   bucket = google_storage_bucket.pexip_images.name
+
+  depends_on = [google_storage_bucket.pexip_images]
 }
 
 # Create Management Node custom image
-resource "google_compute_image" "mgr_node" {
-  name = "pexip-mgr-${var.pexip_version}"
-
+resource "google_compute_image" "pexip_mgmt_image" {
+  name = "pexip-mgr-v${var.pexip_version}"
+  
   raw_disk {
-    source = "gs://${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.mgr_image.name}"
+    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.mgmt_node_image.name}"
   }
 
-  depends_on = [google_storage_bucket_object.mgr_image]
+  labels = merge(var.labels, {
+    environment = var.environment
+    managed-by  = "terraform"
+    version     = replace(var.pexip_version, ".", "-")
+  })
+
+  timeouts {
+    create = "15m"
+  }
 }
 
 # Create Conference Node custom image
-resource "google_compute_image" "conf_node" {
-  name = "pexip-conf-${var.pexip_version}"
+resource "google_compute_image" "pexip_conf_image" {
+  name = "pexip-conf-v${var.pexip_version}"
 
   raw_disk {
-    source = "gs://${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.conf_image.name}"
+    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.conf_node_image.name}"
   }
 
-  depends_on = [google_storage_bucket_object.conf_image]
+  labels = merge(var.labels, {
+    environment = var.environment
+    managed-by  = "terraform"
+    version     = replace(var.pexip_version, ".", "-")
+  })
+
+  timeouts {
+    create = "15m"
+  }
+}
+
+# Null resource to check image creation completion
+resource "null_resource" "image_creation_check" {
+  depends_on = [
+    google_compute_image.pexip_mgmt_image,
+    google_compute_image.pexip_conf_image
+  ]
+
+  provisioner "local-exec" {
+    command = "echo 'Pexip images creation completed. Management Node and Conference Node images are ready for use.'"
+  }
+}
+
+# Output messages
+output "management_node_image_status" {
+  description = "Status of Management Node image creation"
+  value       = "Management Node image '${google_compute_image.pexip_mgmt_image.name}' created with ID: ${google_compute_image.pexip_mgmt_image.id}"
+}
+
+output "conference_node_image_status" {
+  description = "Status of Conference Node image creation"
+  value       = "Conference Node image '${google_compute_image.pexip_conf_image.name}' created with ID: ${google_compute_image.pexip_conf_image.id}"
 }

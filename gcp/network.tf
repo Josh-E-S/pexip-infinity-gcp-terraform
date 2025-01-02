@@ -2,7 +2,7 @@
 resource "google_compute_network" "pexip_infinity_network" {
   name                    = var.network_name
   auto_create_subnetworks = false
-  routing_mode           = "GLOBAL"
+  routing_mode            = "GLOBAL"
 }
 
 # Subnets (one per region)
@@ -47,7 +47,7 @@ resource "google_compute_firewall" "allow_management" {
 
   allow {
     protocol = "tcp"
-    ports    = ["443", "22"]  # HTTPS and SSH
+    ports    = ["443", "22"] # HTTPS and SSH
   }
 
   source_ranges = var.management_allowed_cidrs
@@ -61,7 +61,7 @@ resource "google_compute_firewall" "allow_provisioning" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8443"]  # Conference Node provisioning port
+    ports    = ["8443"] # Conference Node provisioning port
   }
 
   source_ranges = var.management_allowed_cidrs
@@ -75,19 +75,19 @@ resource "google_compute_firewall" "allow_conferencing" {
 
   allow {
     protocol = "tcp"
-    ports    = [
-      "443",   # HTTPS
-      "1720",  # H.323/Q.931
-      "5060",  # SIP
-      "5061",  # SIP/TLS
-    # "33000-39999",  # TCP H.323 Media Optional
-    # "40000-49999"   # SIP TCP Media Optional
+    ports = [
+      "443",  # HTTPS
+      "1720", # H.323/Q.931
+      "5060", # SIP
+      "5061", # SIP/TLS
+      # "33000-39999",  # TCP H.323 Media Optional
+      # "40000-49999"   # SIP TCP Media Optional
     ]
   }
 
   allow {
     protocol = "udp"
-    ports    = [
+    ports = [
       "1719",        # H.323/RAS
       "33000-39999", # H.323 Media
       "40000-49999"  # SIP/WebRTC Media
@@ -128,7 +128,7 @@ resource "google_compute_address" "conf_internal_ips" {
       ]
     ]) : "${idx.region}-${idx.index}" => idx
   }
-  
+
   name         = "pexip-conf-internal-ip-${each.value.region}-${each.value.index + 1}"
   subnetwork   = google_compute_subnetwork.pexip_subnets[each.value.region].id
   address_type = "INTERNAL"
@@ -148,7 +148,7 @@ resource "google_compute_address" "conf_external_ips" {
       ]
     ]) : "${idx.region}-${idx.index}" => idx
   } : {}
-  
+
   name         = "pexip-conf-external-ip-${each.value.region}-${each.value.index + 1}"
   region       = each.value.region
   address_type = "EXTERNAL"

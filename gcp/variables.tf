@@ -108,8 +108,8 @@ variable "conf_node_count" {
   description = "Number of Conference Nodes to deploy per region"
   type        = map(number)
   default = {
-    "us-west1" = 1
-    "us-central1"  = 1
+    "us-west1"    = 1
+    "us-central1" = 1
   }
 }
 
@@ -143,8 +143,8 @@ variable "system_location" {
   description = "Map of Pexip system locations per region"
   type        = map(string)
   default = {
-    "us-west1" = "London"
-    "us-central1"  = "Iowa"
+    "us-west1"    = "London"
+    "us-central1" = "Iowa"
   }
 }
 
