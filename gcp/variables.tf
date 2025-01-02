@@ -50,6 +50,12 @@ variable "subnet_cidr_ranges" {
   }
 }
 
+variable "enable_public_ips" {
+  description = "Option to enable public IP addresses for nodes"
+  type        = bool
+  default     = false
+}
+
 # Management Node Variables
 variable "mgmt_machine_type" {
   description = "Machine type for Management Node"
@@ -82,14 +88,14 @@ variable "conf_machine_type" {
 }
 
 variable "conf_node_image" {
-  description = "Custom image name for Conference Nodes"
+  description = "GCP image name for Conference Nodes"
   type        = string
 }
 
 variable "conf_node_disk_size" {
   description = "Boot disk size for Conference Nodes in GB"
   type        = number
-  default     = 32
+  default     = 50
 }
 
 variable "conf_node_disk_type" {
@@ -102,8 +108,8 @@ variable "conf_node_count" {
   description = "Number of Conference Nodes to deploy per region"
   type        = map(number)
   default = {
-    "europe-west2" = 2
-    "us-central1"  = 2
+    "us-west1" = 1
+    "us-central1"  = 1
   }
 }
 
@@ -117,7 +123,7 @@ variable "ssh_public_key" {
 variable "management_allowed_cidrs" {
   description = "List of CIDR ranges allowed to access Management Node"
   type        = list(string)
-  default     = []
+  default     = ["0.0.0.0/0"]
 }
 
 variable "conf_node_allowed_cidrs" {
@@ -137,7 +143,7 @@ variable "system_location" {
   description = "Map of Pexip system locations per region"
   type        = map(string)
   default = {
-    "europe-west2" = "London"
+    "us-west1" = "London"
     "us-central1"  = "Iowa"
   }
 }
@@ -151,7 +157,7 @@ variable "dns_servers" {
 variable "ntp_servers" {
   description = "List of NTP servers to configure"
   type        = list(string)
-  default     = ["169.254.169.254"] # GCP metadata server NTP
+  default     = ["169.254.169.254"]
 }
 
 # Labels and Tags
@@ -177,7 +183,7 @@ variable "storage_bucket_location" {
 variable "pexip_images_bucket" {
   description = "Name of the GCS bucket to store Pexip images"
   type        = string
-  default     = "pexip-images"
+  default     = "pexip-infinity-images"
 }
 
 variable "pexip_version" {
