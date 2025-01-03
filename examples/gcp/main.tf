@@ -29,7 +29,7 @@ locals {
   ]
 
   # Validate CIDR ranges don't overlap
-  cidr_ranges = [for range in values(var.subnet_cidr_ranges) : range]
+  cidr_ranges           = [for range in values(var.subnet_cidr_ranges) : range]
   validate_cidr_overlap = length(local.cidr_ranges) == length(toset(local.cidr_ranges))
 
   # Validate machine types are available in specified zones
