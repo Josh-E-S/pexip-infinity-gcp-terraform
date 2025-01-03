@@ -76,11 +76,6 @@ variable "mgmt_machine_type" {
   default     = "n2-highcpu-4"
 }
 
-variable "mgmt_node_image" {
-  description = "GCP Image name for Management Node"
-  type        = string
-}
-
 variable "mgmt_node_disk_size" {
   description = "Boot disk size for Management Node in GB"
   type        = number
@@ -126,11 +121,6 @@ variable "conf_machine_type" {
   description = "Machine type for Conference Nodes"
   type        = string
   default     = "n2-highcpu-8"
-}
-
-variable "conf_node_image" {
-  description = "GCP image name for Conference Nodes"
-  type        = string
 }
 
 variable "conf_node_disk_size" {

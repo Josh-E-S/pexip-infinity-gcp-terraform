@@ -45,6 +45,15 @@ locals {
     for region, zones in var.zones :
     length(zones) > 0
   ])
+
+  # API validation results
+  api_status = {
+    for api in data.google_project_service.required_apis :
+    api.service => api.enabled
+  }
+
+  # Service account validation
+  sa_exists = data.google_service_account.terraform_sa.unique_id != null
 }
 
 # Comprehensive precondition checks
