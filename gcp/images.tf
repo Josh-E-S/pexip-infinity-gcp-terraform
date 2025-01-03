@@ -1,8 +1,8 @@
 # Storage bucket for Pexip disk images
 resource "google_storage_bucket" "pexip_images" {
-  name          = "${var.project_id}-${var.pexip_images_bucket}"
-  location      = var.storage_bucket_location
-  force_destroy = true
+  name                        = "${var.project_id}-${var.pexip_images_bucket}"
+  location                    = var.storage_bucket_location
+  force_destroy               = true
   uniform_bucket_level_access = true
 
   labels = merge(var.labels, {
@@ -32,7 +32,7 @@ resource "google_storage_bucket_object" "conf_node_image" {
 # Create Management Node custom image
 resource "google_compute_image" "pexip_mgmt_image" {
   name = "pexip-mgr-v${var.pexip_version}"
-  
+
   raw_disk {
     source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.mgmt_node_image.name}"
   }
@@ -77,15 +77,4 @@ resource "null_resource" "image_creation_check" {
   provisioner "local-exec" {
     command = "echo 'Pexip images creation completed. Management Node and Conference Node images are ready for use.'"
   }
-}
-
-# Output messages
-output "management_node_image_status" {
-  description = "Status of Management Node image creation"
-  value       = "Management Node image '${google_compute_image.pexip_mgmt_image.name}' created with ID: ${google_compute_image.pexip_mgmt_image.id}"
-}
-
-output "conference_node_image_status" {
-  description = "Status of Conference Node image creation"
-  value       = "Conference Node image '${google_compute_image.pexip_conf_image.name}' created with ID: ${google_compute_image.pexip_conf_image.id}"
 }

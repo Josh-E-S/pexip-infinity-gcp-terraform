@@ -56,6 +56,19 @@ variable "enable_public_ips" {
   default     = false
 }
 
+# Instance Names
+variable "mgmt_node_name" {
+  description = "Name of the Management Node instance"
+  type        = string
+  default     = "pexip-mgr"
+}
+
+variable "conf_node_name" {
+  description = "Prefix for Conference Node instances - will be combined with region and number"
+  type        = string
+  default     = "pexip-conf"
+}
+
 # Management Node Variables
 variable "mgmt_machine_type" {
   description = "Machine type for Management Node"
@@ -78,6 +91,34 @@ variable "mgmt_node_disk_type" {
   description = "Boot disk type for Management Node"
   type        = string
   default     = "pd-ssd"
+}
+
+variable "mgmt_node_hostname" {
+  description = "Hostname for Management Node"
+  type        = string
+  default     = "mgr"
+}
+
+variable "mgmt_node_domain" {
+  description = "Domain for Management Node"
+  type        = string
+}
+
+variable "mgmt_node_gateway" {
+  description = "Gateway IP for Management Node"
+  type        = string
+}
+
+variable "mgmt_node_admin_password_hash" {
+  description = "PBKDF2 SHA-256 hashed password for web admin interface"
+  type        = string
+  sensitive   = true
+}
+
+variable "mgmt_node_os_password_hash" {
+  description = "SHA-512 hashed password for OS admin user"
+  type        = string
+  sensitive   = true
 }
 
 # Conference Node Variables
@@ -133,19 +174,16 @@ variable "conf_node_allowed_cidrs" {
 }
 
 # Pexip Configuration Variables
-variable "admin_password" {
-  description = "Initial admin password for Pexip Management Node"
-  type        = string
-  sensitive   = true
+variable "enable_error_reporting" {
+  description = "Enable error reporting to Pexip"
+  type        = bool
+  default     = false
 }
 
-variable "system_location" {
-  description = "Map of Pexip system locations per region"
-  type        = map(string)
-  default = {
-    "us-west1"    = "London"
-    "us-central1" = "Iowa"
-  }
+variable "enable_analytics" {
+  description = "Enable analytics reporting to Pexip"
+  type        = bool
+  default     = false
 }
 
 variable "dns_servers" {
