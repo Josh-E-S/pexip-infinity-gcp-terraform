@@ -60,7 +60,7 @@ def generate_hashes(web_password, admin_password):
     try:
         validate_password(web_password)
         validate_password(admin_password)
-        
+
         return {
             "web_hash": generate_django_password(web_password),
             "admin_hash": generate_linux_password(admin_password)

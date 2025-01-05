@@ -264,45 +264,67 @@ variable "enable_protocols" {
   }
 }
 
-# Management Node Services Configuration
-variable "mgmt_node_services" {
-  description = "Enable/disable Management Node services"
-  type = object({
-    ftp_backup      = bool
-    ldap            = bool
-    smtp            = bool
-    teams_event_hub = bool
-    exchange        = bool
-    cloud_bursting  = bool
-    usage_stats     = bool
-  })
+# Node Services Configuration
+variable "node_services" {
+  description = "Configuration for node services including ports, protocols, and which node types they apply to"
+  type = map(object({
+    description = string
+    ports       = list(number)
+    protocol    = string
+    enabled     = bool
+    node_types  = list(string)  # Can be ["transcoding"], ["proxy"], or ["transcoding", "proxy"]
+  }))
+  
   default = {
-    ftp_backup      = false
-    ldap            = false
-    smtp            = true
-    teams_event_hub = false
-    exchange        = false
-    cloud_bursting  = false
-    usage_stats     = false
-  }
-}
-
-# Conference Node Services Configuration
-variable "conf_node_services" {
-  description = "Enable/disable Conference Node services"
-  type = object({
-    one_touch_join = bool
-    epic           = bool
-    ai_media       = bool
-    event_sink     = bool
-    ad_fs          = bool
-  })
-  default = {
-    one_touch_join = false
-    epic           = false
-    ai_media       = false
-    event_sink     = false
-    ad_fs          = false
+    one_touch_join = {
+      description = "One-Touch Join service"
+      ports       = [443]
+      protocol    = "tcp"
+      enabled     = false
+      node_types  = ["transcoding", "proxy"]
+    }
+    event_sink = {
+      description = "Event Sink service"
+      ports       = [80, 443]
+      protocol    = "tcp"
+      enabled     = false
+      node_types  = ["transcoding", "proxy"]
+    }
+    epic = {
+      description = "Epic integration service"
+      ports       = [443]
+      protocol    = "tcp"
+      enabled     = false
+      node_types  = ["transcoding"]
+    }
+    ai_media = {
+      description = "AI Media service"
+      ports       = [443]
+      protocol    = "tcp"
+      enabled     = false
+      node_types  = ["transcoding"]
+    }
+    teams = {
+      description = "Microsoft Teams integration"
+      ports       = [443]
+      protocol    = "tcp"
+      enabled     = false
+      node_types  = ["transcoding"]
+    }
+    exchange = {
+      description = "Exchange integration"
+      ports       = [443]
+      protocol    = "tcp"
+      enabled     = false
+      node_types  = ["transcoding"]
+    }
+    smtp = {
+      description = "SMTP service"
+      ports       = [587]
+      protocol    = "tcp"
+      enabled     = false
+      node_types  = ["transcoding"]
+    }
   }
 }
 

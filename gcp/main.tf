@@ -51,7 +51,7 @@ resource "null_resource" "precondition_checks" {
     # Management node bootstrap values validation
     precondition {
       condition = (
-        var.mgmt_node_admin_password_hash != "" && 
+        var.mgmt_node_admin_password_hash != "" &&
         var.mgmt_node_os_password_hash != "" &&
         can(regex("^\\$pbkdf2-sha256\\$", var.mgmt_node_admin_password_hash)) &&
         can(regex("^\\$6\\$rounds=", var.mgmt_node_os_password_hash))
@@ -108,7 +108,7 @@ resource "null_resource" "precondition_checks" {
     }
 
     precondition {
-      condition = var.ssh_public_key != "" ? can(regex("^ssh-[^ ]+ [^ ]+ admin$", var.ssh_public_key)) : true
+      condition     = var.ssh_public_key != "" ? can(regex("^ssh-[^ ]+ [^ ]+ admin$", var.ssh_public_key)) : true
       error_message = "If provided, SSH public key must be in OpenSSH format and include 'admin' username"
     }
 

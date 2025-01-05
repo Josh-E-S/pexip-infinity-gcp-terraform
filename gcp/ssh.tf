@@ -9,7 +9,7 @@ resource "tls_private_key" "ssh" {
 resource "google_secret_manager_secret" "ssh_private_key" {
   count     = var.ssh_public_key == "" ? 1 : 0
   secret_id = "${var.project_id}-pexip-ssh-private-key"
-  
+
   replication {
     auto {}
   }

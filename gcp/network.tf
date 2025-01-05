@@ -155,35 +155,27 @@ resource "google_compute_firewall" "allow_protocols" {
 
 # Conference Node services
 resource "google_compute_firewall" "allow_conf_services" {
-  name    = "pexip-allow-mgmt-services"
+  for_each = {
+    for name, service in var.node_services :
+    name => service
+    if service.enabled
+  }
+
+  name    = "${var.network_config.name}-allow-${each.key}"
   network = google_compute_network.pexip_infinity_network.name
 
-  dynamic "allow" {
-    for_each = var.conf_node_services.one_touch_join ? [1] : []
-    content {
-      protocol = "tcp"
-      ports    = ["443"]
-    }
+  allow {
+    protocol = each.value.protocol
+    ports    = [for port in each.value.ports : tostring(port)]
   }
 
-  dynamic "allow" {
-    for_each = var.conf_node_services.event_sink ? [1] : []
-    content {
-      protocol = "tcp"
-      ports    = ["80", "443"]
-    }
-  }
-
-  dynamic "allow" {
-    for_each = var.conf_node_services.epic ? [1] : []
-    content {
-      protocol = "tcp"
-      ports    = ["443"]
-    }
-  }
+  # Apply to transcoding and/or proxy nodes based on node_types
+  target_tags = flatten([
+    contains(each.value.node_types, "transcoding") ? var.instance_configs.conference_transcoding.tags : [],
+    contains(each.value.node_types, "proxy") ? var.instance_configs.conference_proxy.tags : []
+  ])
 
   source_ranges = var.service_cidrs.conf_services
-  target_tags   = ["pexip-conference"]
 }
 
 # Shared services for all nodes
