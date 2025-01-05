@@ -491,3 +491,16 @@ variable "enable_ssh" {
   type        = bool
   default     = true
 }
+
+# Network Configuration
+variable "network_config" {
+  description = "Network configuration for the Pexip infrastructure"
+  type = object({
+    name         = string
+    routing_mode = string
+  })
+  default = {
+    name         = "pexip-network"
+    routing_mode = "GLOBAL"
+  }
+}
