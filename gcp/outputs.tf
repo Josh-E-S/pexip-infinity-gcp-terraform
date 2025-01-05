@@ -2,8 +2,8 @@
 output "validation_results" {
   description = "Results of infrastructure validation checks"
   value = {
-    cidr_ranges_valid  = local.validate_cidr_overlap
-    primary_region     = local.primary_region
+    cidr_ranges_valid   = local.validate_cidr_overlap
+    primary_region      = local.primary_region
     machine_types_valid = local.supported_machine_types
   }
 }
@@ -16,8 +16,8 @@ output "management_node" {
     internal_ip  = google_compute_instance.management_node.network_interface[0].network_ip
     external_ip  = try(google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip, null)
     machine_type = google_compute_instance.management_node.machine_type
-    zone        = google_compute_instance.management_node.zone
-    region      = local.primary_region
+    zone         = google_compute_instance.management_node.zone
+    region       = local.primary_region
   }
 }
 
@@ -27,13 +27,13 @@ output "transcoding_nodes" {
   value = {
     for region, instances in {
       for k, v in google_compute_instance.transcoding_nodes : v.zone => v...
-    } : region => [
+      } : region => [
       for instance in instances : {
         name         = instance.name
         internal_ip  = instance.network_interface[0].network_ip
         external_ip  = try(instance.network_interface[0].access_config[0].nat_ip, null)
         machine_type = instance.machine_type
-        zone        = instance.zone
+        zone         = instance.zone
       }
     ]
   }
@@ -44,13 +44,13 @@ output "proxy_nodes" {
   value = {
     for region, instances in {
       for k, v in google_compute_instance.proxy_nodes : v.zone => v...
-    } : region => [
+      } : region => [
       for instance in instances : {
         name         = instance.name
         internal_ip  = instance.network_interface[0].network_ip
         external_ip  = try(instance.network_interface[0].access_config[0].nat_ip, null)
         machine_type = instance.machine_type
-        zone        = instance.zone
+        zone         = instance.zone
       }
     ]
   }
@@ -97,14 +97,14 @@ output "connection_info" {
     management_interface = var.network_config.enable_public_ips ? format(
       "https://%s",
       google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip
-    ) : format(
+      ) : format(
       "https://%s",
       google_compute_instance.management_node.network_interface[0].network_ip
     )
     ssh_command = var.network_config.enable_public_ips ? format(
       "ssh admin@%s",
       google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip
-    ) : format(
+      ) : format(
       "ssh admin@%s",
       google_compute_instance.management_node.network_interface[0].network_ip
     )

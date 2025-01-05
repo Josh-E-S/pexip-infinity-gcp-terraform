@@ -6,12 +6,18 @@ terraform {
     # Google Provider
     google = {
       source  = "hashicorp/google"
-      version = ">= 4.0.0, < 7.0.0"  # Allows 4.x and 5.x and 6.x versions
+      version = ">= 4.0.0, < 7.0.0" # Allows 4.x and 5.x and 6.x versions
     }
 
     # Random provider for generating unique identifiers
     random = {
       source  = "hashicorp/random"
+      version = ">= 3.0.0"
+    }
+
+    # Null provider for precondition checks
+    null = {
+      source  = "hashicorp/null"
       version = ">= 3.0.0"
     }
 

@@ -14,93 +14,89 @@ resource "google_compute_subnetwork" "pexip_subnets" {
   region        = each.key
 }
 
-# Internal communication between nodes
-resource "google_compute_firewall" "allow_internal" {
-  name    = "pexip-allow-internal"
-  network = google_compute_network.pexip_infinity_network.name
-
-  allow {
-    protocol = "tcp"
-  }
-
-  allow {
-    protocol = "udp"
-    ports    = ["500"]
-  }
-
-  allow {
-    protocol = "icmp"
-  }
-
-  allow {
-    protocol = "esp"
-  }
-
-  source_ranges = [for subnet in google_compute_subnetwork.pexip_subnets : subnet.ip_cidr_range]
-  target_tags   = ["pexip-management", "pexip-conference"]
-}
-
-# Management Node base access
+# Management Node Firewall Rules
 resource "google_compute_firewall" "allow_management" {
-  name    = "pexip-allow-management"
+  name    = "${var.network_config.name}-allow-management"
   network = google_compute_network.pexip_infinity_network.name
 
+  source_ranges = var.network_config.management_allowed_cidrs
+  target_tags   = var.firewall_rules.management.tags
+
   allow {
-    protocol = "tcp"
-    ports    = ["443"]  # HTTPS management interface
+    protocol = var.firewall_rules.management.protocol
+    ports    = var.firewall_rules.management.ports
   }
 
   dynamic "allow" {
-    for_each = var.network_config.enable_ssh ? [1] : []
+    for_each = var.enable_ssh ? [1] : []
     content {
       protocol = "tcp"
       ports    = ["22"]
     }
   }
 
-  source_ranges = var.service_cidrs.mgmt_services
-  target_tags   = ["pexip-management"]
+  priority = var.firewall_rules.management.priority
 }
 
-# Management Node services
-resource "google_compute_firewall" "allow_mgmt_services" {
-  name    = "pexip-allow-mgmt-services"
+# Conference Node Firewall Rules (Transcoding)
+resource "google_compute_firewall" "allow_conference_transcoding" {
+  name    = "${var.network_config.name}-allow-conference-transcoding"
   network = google_compute_network.pexip_infinity_network.name
 
-  dynamic "allow" {
-    for_each = var.mgmt_node_services.ftp_backup ? [1] : []
-    content {
-      protocol = "tcp"
-      ports    = ["21"]
-    }
+  source_ranges = var.network_config.conference_allowed_cidrs
+  target_tags   = var.firewall_rules.conference_transcoding.tags
+
+  # TCP Rules
+  allow {
+    protocol = var.firewall_rules.conference_transcoding.protocol
+    ports    = var.firewall_rules.conference_transcoding.ports
   }
 
-  dynamic "allow" {
-    for_each = var.mgmt_node_services.ldap ? [1] : []
-    content {
-      protocol = "tcp"
-      ports    = ["389", "636", "3268", "3269"]
-    }
+  # UDP Rules
+  allow {
+    protocol = var.firewall_rules.conference_transcoding_udp.protocol
+    ports    = var.firewall_rules.conference_transcoding_udp.ports
   }
 
-  dynamic "allow" {
-    for_each = var.mgmt_node_services.smtp ? [1] : []
-    content {
-      protocol = "tcp"
-      ports    = [tostring(var.service_ports.smtp)]
-    }
+  priority = var.firewall_rules.conference_transcoding.priority
+}
+
+# Conference Node Firewall Rules (Proxy)
+resource "google_compute_firewall" "allow_conference_proxy" {
+  name    = "${var.network_config.name}-allow-conference-proxy"
+  network = google_compute_network.pexip_infinity_network.name
+
+  source_ranges = var.network_config.conference_allowed_cidrs
+  target_tags   = var.firewall_rules.conference_proxy.tags
+
+  # TCP Rules
+  allow {
+    protocol = var.firewall_rules.conference_proxy.protocol
+    ports    = var.firewall_rules.conference_proxy.ports
   }
 
-  dynamic "allow" {
-    for_each = var.mgmt_node_services.teams_event_hub ? [1] : []
-    content {
-      protocol = "tcp"
-      ports    = ["5671"]
-    }
+  # UDP Rules
+  allow {
+    protocol = var.firewall_rules.conference_proxy_udp.protocol
+    ports    = var.firewall_rules.conference_proxy_udp.ports
   }
 
-  source_ranges = var.service_cidrs.mgmt_services
-  target_tags   = ["pexip-management"]
+  priority = var.firewall_rules.conference_proxy.priority
+}
+
+# Internal Communication Rules
+resource "google_compute_firewall" "allow_internal" {
+  name    = "${var.network_config.name}-allow-internal"
+  network = google_compute_network.pexip_infinity_network.name
+
+  source_tags = var.firewall_rules.internal.tags
+  target_tags = var.firewall_rules.internal.tags
+
+  allow {
+    protocol = var.firewall_rules.internal.protocol
+  }
+
+  priority = var.firewall_rules.internal.priority
 }
 
 # Core protocols for Conference Nodes
@@ -159,7 +155,7 @@ resource "google_compute_firewall" "allow_protocols" {
 
 # Conference Node services
 resource "google_compute_firewall" "allow_conf_services" {
-  name    = "pexip-allow-conf-services"
+  name    = "pexip-allow-mgmt-services"
   network = google_compute_network.pexip_infinity_network.name
 
   dynamic "allow" {
@@ -198,12 +194,12 @@ resource "google_compute_firewall" "allow_shared_services" {
   # Required services
   allow {
     protocol = "tcp"
-    ports    = ["53", "443"]  # DNS, License server
+    ports    = ["53", "443"] # DNS, License server
   }
 
   allow {
     protocol = "udp"
-    ports    = ["53", "123"]  # DNS, NTP
+    ports    = ["53", "123"] # DNS, NTP
   }
 
   # Optional services

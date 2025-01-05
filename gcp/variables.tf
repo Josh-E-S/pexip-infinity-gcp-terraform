@@ -39,8 +39,8 @@ variable "instance_configs" {
 variable "regions" {
   description = "Map of region configurations for Pexip deployment"
   type = map(object({
-    priority        = number
-    cidr           = string
+    priority = number
+    cidr     = string
     conference_nodes = object({
       transcoding = object({
         count = number
@@ -70,47 +70,47 @@ variable "regions" {
 variable "firewall_rules" {
   description = "Map of firewall rules configurations for different Pexip components"
   type = map(object({
-    ports     = list(string)
-    protocol  = string
-    priority  = number
-    tags      = list(string)
+    ports    = list(string)
+    protocol = string
+    priority = number
+    tags     = list(string)
   }))
   default = {
     management = {
-      ports     = ["443", "22"]
-      protocol  = "tcp"
-      priority  = 1000
-      tags      = ["pexip-management"]
+      ports    = ["443", "22"]
+      protocol = "tcp"
+      priority = 1000
+      tags     = ["pexip-management"]
     }
     conference_transcoding = {
-      ports     = ["443", "1720", "5060", "5061", "33000-39999"]
-      protocol  = "tcp"
-      priority  = 1001
-      tags      = ["pexip-conference", "pexip-transcoding"]
+      ports    = ["443", "1720", "5060", "5061", "33000-39999"]
+      protocol = "tcp"
+      priority = 1001
+      tags     = ["pexip-conference", "pexip-transcoding"]
     }
     conference_transcoding_udp = {
-      ports     = ["1719", "33000-39999", "40000-49999"]
-      protocol  = "udp"
-      priority  = 1002
-      tags      = ["pexip-conference", "pexip-transcoding"]
+      ports    = ["1719", "33000-39999", "40000-49999"]
+      protocol = "udp"
+      priority = 1002
+      tags     = ["pexip-conference", "pexip-transcoding"]
     }
     conference_proxy = {
-      ports     = ["443", "5061", "40000-49999"]
-      protocol  = "tcp"
-      priority  = 1003
-      tags      = ["pexip-conference", "pexip-proxy"]
+      ports    = ["443", "5061", "40000-49999"]
+      protocol = "tcp"
+      priority = 1003
+      tags     = ["pexip-conference", "pexip-proxy"]
     }
     conference_proxy_udp = {
-      ports     = ["40000-49999"]
-      protocol  = "udp"
-      priority  = 1004
-      tags      = ["pexip-conference", "pexip-proxy"]
+      ports    = ["40000-49999"]
+      protocol = "udp"
+      priority = 1004
+      tags     = ["pexip-conference", "pexip-proxy"]
     }
     internal = {
-      ports     = []  # Allow all ports for internal communication
-      protocol  = "all"
-      priority  = 900
-      tags      = ["pexip-management", "pexip-conference"]
+      ports    = [] # Allow all ports for internal communication
+      protocol = "all"
+      priority = 900
+      tags     = ["pexip-management", "pexip-conference"]
     }
   }
 }
@@ -252,14 +252,14 @@ variable "pexip_conf_image_source" {
 variable "enable_protocols" {
   description = "Enable/disable core communication protocols"
   type = object({
-    h323    = bool
-    sip     = bool
-    webrtc  = bool
+    h323   = bool
+    sip    = bool
+    webrtc = bool
   })
   default = {
-    h323    = true
-    sip     = true
-    webrtc  = true
+    h323   = true
+    sip    = true
+    webrtc = true
   }
 }
 

@@ -1,33 +1,5 @@
-# Check if required APIs are enabled
-data "google_project_service" "required_apis" {
-  for_each = toset([
-    "compute.googleapis.com",
-    "secretmanager.googleapis.com",
-    "storage-api.googleapis.com",
-    "iam.googleapis.com"
-  ])
-  project = var.project_id
-  service = each.value
-}
-
-# Verify service account permissions
-data "google_service_account" "terraform_sa" {
-  account_id = split("@", data.google_client_config.current.service_account)[0]
-  project    = var.project_id
-}
-
-data "google_client_config" "current" {}
-
 # Local variables for validation
 locals {
-  # Required roles for the service account
-  required_roles = [
-    "roles/compute.admin",
-    "roles/secretmanager.admin",
-    "roles/storage.admin",
-    "roles/iam.serviceAccountUser"
-  ]
-
   # Get primary region (priority = 1)
   primary_region = [
     for region, config in var.regions :
@@ -35,7 +7,7 @@ locals {
   ][0]
 
   # Validate CIDR ranges don't overlap
-  all_cidrs = [for region in var.regions : region.cidr]
+  all_cidrs             = [for region in var.regions : region.cidr]
   validate_cidr_overlap = length(local.all_cidrs) == length(toset(local.all_cidrs))
 
   # Validate machine types meet Pexip requirements

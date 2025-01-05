@@ -16,7 +16,7 @@ resource "google_compute_instance" "management_node" {
 
   network_interface {
     subnetwork = google_compute_subnetwork.pexip_subnets[local.primary_region].self_link
-    
+
     # Static internal IP configuration
     network_ip = google_compute_address.mgmt_node_internal_ip.address
 
@@ -30,11 +30,19 @@ resource "google_compute_instance" "management_node" {
 
   metadata = {
     ssh-keys = var.ssh_public_key
-    startup-script = templatefile("${path.module}/templates/management_node_startup.tpl", {
-      admin_password_hash = var.mgmt_node_admin_password_hash
-      os_password_hash   = var.mgmt_node_os_password_hash
+    management_node_config = jsonencode({
       hostname          = var.mgmt_node_hostname
-      domain           = var.mgmt_node_domain
+      domain            = var.mgmt_node_domain
+      ip               = google_compute_address.mgmt_node_internal_ip.address
+      mask             = "255.255.255.255"  # Using /32 since we're using internal IP allocation
+      gw               = var.mgmt_node_gateway
+      dns              = join(",", var.dns_servers)
+      ntp              = join(",", var.ntp_servers)
+      user             = "admin"
+      pass             = var.mgmt_node_admin_password_hash  # PBKDF2 with HMAC-SHA256 (Django-style)
+      admin_password   = var.mgmt_node_os_password_hash    # SHA-512
+      error_reports    = var.enable_error_reporting
+      enable_analytics = var.enable_analytics
     })
   }
 
