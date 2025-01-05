@@ -29,7 +29,7 @@ resource "google_compute_instance" "management_node" {
   }
 
   metadata = {
-    ssh-keys = var.ssh_public_key
+    ssh-keys = local.ssh_public_key
     management_node_config = jsonencode({
       hostname          = var.mgmt_node_hostname
       domain            = var.mgmt_node_domain

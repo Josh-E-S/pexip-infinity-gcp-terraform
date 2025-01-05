@@ -36,7 +36,7 @@ resource "google_compute_instance" "transcoding_nodes" {
   }
 
   metadata = {
-    ssh-keys = var.ssh_public_key
+    ssh-keys = local.ssh_public_key
   }
 
   lifecycle {
@@ -86,7 +86,7 @@ resource "google_compute_instance" "proxy_nodes" {
   }
 
   metadata = {
-    ssh-keys = var.ssh_public_key
+    ssh-keys = local.ssh_public_key
   }
 
   lifecycle {

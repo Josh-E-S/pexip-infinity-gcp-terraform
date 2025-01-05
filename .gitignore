@@ -36,3 +36,17 @@ terraform.rc
 # Operating System Files
 .DS_Store
 Thumbs.db
+
+# SSH Keys
+**/*.pem
+**/*.key
+**/*.pub
+**/id_rsa*
+**/id_ed25519*
+**/.ssh/
+
+# Password files
+**/passwords.auto.tfvars
+**/passwords.tfvars
+**/*.password
+**/*.passwords

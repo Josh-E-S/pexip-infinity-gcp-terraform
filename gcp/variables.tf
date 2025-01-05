@@ -178,8 +178,9 @@ variable "mgmt_node_os_password_hash" {
 
 # SSH Configuration
 variable "ssh_public_key" {
-  description = "SSH public key for admin user (must have username 'admin')"
+  description = "SSH public key for admin user (must have username 'admin'). If not provided, a key pair will be generated and the private key will be stored in Secret Manager."
   type        = string
+  default     = ""
 }
 
 # Pexip Configuration Variables
