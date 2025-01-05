@@ -5,7 +5,7 @@ Infrastructure as Code templates for deploying Pexip Infinity video conferencing
 
 ## Overview
 
-This repository contains Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure. The templates are designed to be modular and support multiple cloud providers, starting with Google Cloud Platform (GCP).
+This repository contains Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure. The templates are designed to support deployments on multiple cloud providers, starting with Google Cloud Platform (GCP).
 
 ### Features
 

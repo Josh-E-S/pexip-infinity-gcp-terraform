@@ -7,9 +7,9 @@ resource "google_compute_network" "pexip_infinity_network" {
 
 # Subnets (one per region)
 resource "google_compute_subnetwork" "pexip_subnets" {
-  for_each      = var.subnet_cidr_ranges
+  for_each      = var.regions
   name          = "pexip-subnet-${each.key}"
-  ip_cidr_range = each.value
+  ip_cidr_range = each.value.cidr
   network       = google_compute_network.pexip_infinity_network.id
   region        = each.key
 }
@@ -36,8 +36,8 @@ resource "google_compute_firewall" "allow_internal" {
     protocol = "esp"
   }
 
-  source_ranges = values(var.subnet_cidr_ranges)
-  target_tags   = ["pexip-conf-node"]
+  source_ranges = [for subnet in google_compute_subnetwork.pexip_subnets : subnet.ip_cidr_range]
+  target_tags   = ["pexip-conference"]
 }
 
 # Firewall rule for Management Node access
@@ -65,25 +65,32 @@ resource "google_compute_firewall" "allow_provisioning" {
   }
 
   source_ranges = var.management_allowed_cidrs
-  target_tags   = ["pexip-conf-node"]
+  target_tags   = ["pexip-conference"]
 }
 
-# Firewall rule for Conference Node access
-resource "google_compute_firewall" "allow_conferencing" {
-  name    = "pexip-allow-conferencing"
+# Firewall rules for Transcoding Conference Nodes
+resource "google_compute_firewall" "allow_transcoding_tcp" {
+  name    = "pexip-allow-transcoding-tcp"
   network = google_compute_network.pexip_infinity_network.name
 
   allow {
     protocol = "tcp"
     ports = [
-      "443",  # HTTPS
-      "1720", # H.323/Q.931
-      "5060", # SIP
-      "5061", # SIP/TLS
-      # "33000-39999",  # TCP H.323 Media Optional
-      # "40000-49999"   # SIP TCP Media Optional
+      "443",         # HTTPS
+      "1720",        # H.323/Q.931
+      "5060",        # SIP
+      "5061",        # SIP/TLS
+      "33000-39999"  # TCP H.323 Media
     ]
   }
+
+  source_ranges = var.conf_node_allowed_cidrs
+  target_tags   = ["pexip-transcoding"]
+}
+
+resource "google_compute_firewall" "allow_transcoding_udp" {
+  name    = "pexip-allow-transcoding-udp"
+  network = google_compute_network.pexip_infinity_network.name
 
   allow {
     protocol = "udp"
@@ -95,7 +102,40 @@ resource "google_compute_firewall" "allow_conferencing" {
   }
 
   source_ranges = var.conf_node_allowed_cidrs
-  target_tags   = ["pexip-conf-node"]
+  target_tags   = ["pexip-transcoding"]
+}
+
+# Firewall rules for Proxy Conference Nodes
+resource "google_compute_firewall" "allow_proxy_tcp" {
+  name    = "pexip-allow-proxy-tcp"
+  network = google_compute_network.pexip_infinity_network.name
+
+  allow {
+    protocol = "tcp"
+    ports = [
+      "443",         # HTTPS
+      "5061",        # SIP/TLS
+      "40000-49999"  # Media
+    ]
+  }
+
+  source_ranges = var.conf_node_allowed_cidrs
+  target_tags   = ["pexip-proxy"]
+}
+
+resource "google_compute_firewall" "allow_proxy_udp" {
+  name    = "pexip-allow-proxy-udp"
+  network = google_compute_network.pexip_infinity_network.name
+
+  allow {
+    protocol = "udp"
+    ports = [
+      "40000-49999"  # Media
+    ]
+  }
+
+  source_ranges = var.conf_node_allowed_cidrs
+  target_tags   = ["pexip-proxy"]
 }
 
 # Static Internal IP for Management Node

@@ -4,95 +4,150 @@ variable "project_id" {
   type        = string
 }
 
-# Region and Zone Variables
-variable "default_region" {
-  description = "The default GCP region for resource deployment"
-  type        = string
-  default     = "us-west1" # Oregon
-}
-
-variable "region_2" {
-  description = "Optional second region for multi-region deployment"
-  type        = string
-  default     = "us-central1" # Iowa
-}
-
-variable "region_3" {
-  description = "Optional third region for multi-region deployment"
-  type        = string
-  default     = "us-east1" # South Carolina
-}
-
-variable "zones" {
-  description = "Map of regions to default zones for deployment"
-  type        = map(list(string))
+# Instance Configuration Maps
+variable "instance_configs" {
+  description = "Map of predefined instance configurations for different Pexip node types"
+  type = map(object({
+    machine_type = string
+    disk_size    = number
+    disk_type    = string
+    tags         = list(string)
+  }))
   default = {
-    "us-west1"    = ["us-west1-a"]
-    "us-central1" = ["us-central1-a"]
-    "us-east1"    = ["us-east1-b"]
+    management = {
+      machine_type = "n2-highcpu-4"
+      disk_size    = 100
+      disk_type    = "pd-ssd"
+      tags         = ["pexip-management"]
+    }
+    conference_transcoding = {
+      machine_type = "n2-highcpu-8"
+      disk_size    = 50
+      disk_type    = "pd-ssd"
+      tags         = ["pexip-conference", "pexip-transcoding"]
+    }
+    conference_proxy = {
+      machine_type = "n2-highcpu-4"
+      disk_size    = 50
+      disk_type    = "pd-ssd"
+      tags         = ["pexip-conference", "pexip-proxy"]
+    }
   }
 }
 
-# Network Variables
-variable "network_name" {
-  description = "Name of the VPC network to create"
-  type        = string
-  default     = "pexip-infinity-network"
-}
-
-variable "subnet_cidr_ranges" {
-  description = "Map of subnet CIDR ranges per region"
-  type        = map(string)
-  default = {
-    "us-west1"    = "10.0.0.0/20"
-    "us-central1" = "10.1.0.0/20"
-    "us-east1"    = "10.2.0.0/20"
+# Region Configuration Map
+variable "regions" {
+  description = "Map of region configurations for Pexip deployment"
+  type = map(object({
+    priority        = number
+    cidr           = string
+    conference_nodes = object({
+      transcoding = object({
+        count = number
+        zones = list(string)
+        config = optional(object({
+          machine_type = optional(string)
+          disk_size    = optional(number)
+        }))
+      })
+      proxy = optional(object({
+        count = number
+        zones = list(string)
+        config = optional(object({
+          machine_type = optional(string)
+          disk_size    = optional(number)
+        }))
+      }))
+    })
+  }))
+  validation {
+    condition     = length([for r in var.regions : r if r.priority == 1]) == 1
+    error_message = "Exactly one region must be designated as primary (priority = 1)."
   }
 }
 
-variable "enable_public_ips" {
-  description = "Option to enable public IP addresses for nodes"
-  type        = bool
-  default     = false
+# Firewall Configuration Map
+variable "firewall_rules" {
+  description = "Map of firewall rules configurations for different Pexip components"
+  type = map(object({
+    ports     = list(string)
+    protocol  = string
+    priority  = number
+    tags      = list(string)
+  }))
+  default = {
+    management = {
+      ports     = ["443", "22"]
+      protocol  = "tcp"
+      priority  = 1000
+      tags      = ["pexip-management"]
+    }
+    conference_transcoding = {
+      ports     = ["443", "1720", "5060", "5061", "33000-39999"]
+      protocol  = "tcp"
+      priority  = 1001
+      tags      = ["pexip-conference", "pexip-transcoding"]
+    }
+    conference_transcoding_udp = {
+      ports     = ["1719", "33000-39999", "40000-49999"]
+      protocol  = "udp"
+      priority  = 1002
+      tags      = ["pexip-conference", "pexip-transcoding"]
+    }
+    conference_proxy = {
+      ports     = ["443", "5061", "40000-49999"]
+      protocol  = "tcp"
+      priority  = 1003
+      tags      = ["pexip-conference", "pexip-proxy"]
+    }
+    conference_proxy_udp = {
+      ports     = ["40000-49999"]
+      protocol  = "udp"
+      priority  = 1004
+      tags      = ["pexip-conference", "pexip-proxy"]
+    }
+    internal = {
+      ports     = []  # Allow all ports for internal communication
+      protocol  = "all"
+      priority  = 900
+      tags      = ["pexip-management", "pexip-conference"]
+    }
+  }
 }
 
-# Instance Names
+# Network Configuration Map
+variable "network_config" {
+  description = "Network configuration for Pexip deployment"
+  type = object({
+    name                     = string
+    routing_mode             = string
+    enable_public_ips        = bool
+    management_allowed_cidrs = list(string)
+    conference_allowed_cidrs = list(string)
+  })
+  default = {
+    name                     = "pexip-infinity-network"
+    routing_mode             = "GLOBAL"
+    enable_public_ips        = false
+    management_allowed_cidrs = ["0.0.0.0/0"]
+    conference_allowed_cidrs = ["0.0.0.0/0"]
+  }
+}
+
+# Node Names
 variable "mgmt_node_name" {
-  description = "Name of the Management Node instance"
+  description = "Name prefix for the Management Node instance"
   type        = string
   default     = "pexip-mgr"
 }
 
-variable "conf_node_name" {
-  description = "Prefix for Conference Node instances - will be combined with region and number"
+variable "conference_node_name" {
+  description = "Base name prefix for Conference Node instances"
   type        = string
   default     = "pexip-conf"
 }
 
 # Management Node Variables
-variable "mgmt_machine_type" {
-  description = "Machine type for Management Node"
-  type        = string
-  default     = "n2-highcpu-4"
-}
-
-variable "mgmt_node_image" {
-  description = "GCP Image name for Management Node"
-  type        = string
-}
-
-variable "mgmt_node_disk_size" {
-  description = "Boot disk size for Management Node in GB"
-  type        = number
-  default     = 100
-}
-
-variable "mgmt_node_disk_type" {
-  description = "Boot disk type for Management Node"
-  type        = string
-  default     = "pd-ssd"
-}
-
 variable "mgmt_node_hostname" {
   description = "Hostname for Management Node"
   type        = string
@@ -110,67 +165,21 @@ variable "mgmt_node_gateway" {
 }
 
 variable "mgmt_node_admin_password_hash" {
-  description = "PBKDF2 SHA-256 hashed password for web admin interface"
+  description = "Password hash for Management Node admin user"
   type        = string
   sensitive   = true
 }
 
 variable "mgmt_node_os_password_hash" {
-  description = "SHA-512 hashed password for OS admin user"
+  description = "Password hash for Management Node OS user"
   type        = string
   sensitive   = true
-}
-
-# Conference Node Variables
-variable "conf_machine_type" {
-  description = "Machine type for Conference Nodes"
-  type        = string
-  default     = "n2-highcpu-8"
-}
-
-variable "conf_node_image" {
-  description = "GCP image name for Conference Nodes"
-  type        = string
-}
-
-variable "conf_node_disk_size" {
-  description = "Boot disk size for Conference Nodes in GB"
-  type        = number
-  default     = 50
-}
-
-variable "conf_node_disk_type" {
-  description = "Boot disk type for Conference Nodes"
-  type        = string
-  default     = "pd-ssd"
-}
-
-variable "conf_node_count" {
-  description = "Number of Conference Nodes to deploy per region"
-  type        = map(number)
-  default = {
-    "us-west1"    = 1
-    "us-central1" = 1
-  }
 }
 
 # SSH Configuration
 variable "ssh_public_key" {
   description = "SSH public key for admin user (must have username 'admin')"
   type        = string
-}
-
-# Firewall Variables
-variable "management_allowed_cidrs" {
-  description = "List of CIDR ranges allowed to access Management Node"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
-variable "conf_node_allowed_cidrs" {
-  description = "List of CIDR ranges allowed to access Conference Nodes"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
 }
 
 # Pexip Configuration Variables

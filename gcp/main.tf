@@ -28,10 +28,6 @@ locals {
     "roles/iam.serviceAccountUser"
   ]
 
-  # Validate CIDR ranges don't overlap
-  cidr_ranges = [for range in values(var.subnet_cidr_ranges) : range]
-  validate_cidr_overlap = length(local.cidr_ranges) == length(toset(local.cidr_ranges))
-
   # Validate machine types are available in specified zones
   supported_machine_types = {
     "n2-highcpu-4"  = true
@@ -40,11 +36,20 @@ locals {
     "n2-highcpu-32" = true
   }
 
-  # Ensure all regions have valid zones specified
-  validate_zones = alltrue([
-    for region, zones in var.zones :
-    length(zones) > 0
-  ])
+  # Get primary region (priority = 1)
+  primary_region = [
+    for region, config in var.regions :
+    region if config.priority == 1
+  ][0]
+
+  # Validate CIDR ranges don't overlap
+  all_cidrs = [for region in var.regions : region.cidr]
+  validate_cidr_overlap = length(local.all_cidrs) == length(toset(local.all_cidrs))
+}
+
+provider "google" {
+  project = var.project_id
+  region  = local.primary_region
 }
 
 # Comprehensive precondition checks
@@ -69,57 +74,24 @@ resource "null_resource" "precondition_checks" {
 
     # Machine type validation
     precondition {
-      condition     = lookup(local.supported_machine_types, var.mgmt_machine_type, false)
-      error_message = "${var.mgmt_machine_type} is not a supported machine type for management node."
+      condition     = lookup(local.supported_machine_types, var.instance_configs.management.machine_type, false)
+      error_message = "${var.instance_configs.management.machine_type} is not a supported machine type for management node."
     }
 
     precondition {
-      condition     = lookup(local.supported_machine_types, var.conf_machine_type, false)
-      error_message = "${var.conf_machine_type} is not a supported machine type for conference nodes."
-    }
-
-    # Zone validation
-    precondition {
-      condition     = local.validate_zones
-      error_message = "All regions must have at least one zone specified."
-    }
-
-    # Image source validation
-    precondition {
-      condition     = fileexists(var.pexip_mgr_image_source)
-      error_message = "Management node image file does not exist at specified path."
+      condition     = lookup(local.supported_machine_types, var.instance_configs.conference_transcoding.machine_type, false)
+      error_message = "${var.instance_configs.conference_transcoding.machine_type} is not a supported machine type for transcoding nodes."
     }
 
     precondition {
-      condition     = fileexists(var.pexip_conf_image_source)
-      error_message = "Conference node image file does not exist at specified path."
+      condition     = lookup(local.supported_machine_types, var.instance_configs.conference_proxy.machine_type, false)
+      error_message = "${var.instance_configs.conference_proxy.machine_type} is not a supported machine type for proxy nodes."
     }
 
-    # Network security validation
+    # Primary region validation
     precondition {
-      condition     = length(var.management_allowed_cidrs) > 0
-      error_message = "At least one CIDR range must be specified for management access."
-    }
-
-    precondition {
-      condition     = length(var.conf_node_allowed_cidrs) > 0
-      error_message = "At least one CIDR range must be specified for conference node access."
+      condition     = length(local.primary_region) > 0
+      error_message = "Exactly one region must be designated as primary (priority = 1)."
     }
   }
-}
-
-# Optional: Add monitoring/logging for deployment status
-resource "null_resource" "deployment_monitor" {
-  triggers = {
-    mgmt_node_id = google_compute_instance.pexip_mgmt.id
-  }
-
-  provisioner "local-exec" {
-    command = "echo 'Deployment completed at: $(date)' >> deployment.log"
-  }
-
-  depends_on = [
-    google_compute_instance.pexip_mgmt,
-    google_compute_instance.pexip_conf_nodes
-  ]
 }
