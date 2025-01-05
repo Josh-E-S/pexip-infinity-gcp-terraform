@@ -106,7 +106,7 @@ variable "protocol_ports" {
     }
     webrtc = {
       tcp_ports = [443]
-      udp_ports = [40000, 49999]  # STUN/TURN ports
+      udp_ports = [40000, 49999] # STUN/TURN ports
     }
   }
 }
@@ -168,7 +168,7 @@ variable "conference_node_firewall_rules" {
     tcp_ports   = list(number)
     udp_ports   = list(number)
     enabled     = bool
-    node_types  = list(string)  # ["transcoding"], ["proxy"], or ["transcoding", "proxy"]
+    node_types  = list(string) # ["transcoding"], ["proxy"], or ["transcoding", "proxy"]
   }))
   default = {
     sip = {
@@ -188,7 +188,7 @@ variable "conference_node_firewall_rules" {
     media = {
       description = "Media ports"
       tcp_ports   = []
-      udp_ports   = [40000, 49999]  # Range will be handled in the firewall rule
+      udp_ports   = [40000, 49999] # Range will be handled in the firewall rule
       enabled     = true
       node_types  = ["transcoding", "proxy"]
     }
@@ -382,9 +382,9 @@ variable "node_services" {
     ports       = list(number)
     protocol    = string
     enabled     = bool
-    node_types  = list(string)  # Can be ["transcoding"], ["proxy"], or ["transcoding", "proxy"]
+    node_types  = list(string) # Can be ["transcoding"], ["proxy"], or ["transcoding", "proxy"]
   }))
-  
+
   default = {
     one_touch_join = {
       description = "One-Touch Join service"
@@ -445,11 +445,13 @@ variable "shared_services" {
     snmp      = bool
     syslog    = bool
     web_proxy = bool
+    ssh       = bool
   })
   default = {
     snmp      = false
     syslog    = true
     web_proxy = false
+    ssh       = true
   }
 }
 
@@ -483,13 +485,6 @@ variable "service_cidrs" {
     shared_services = ["0.0.0.0/0"]
     peripheral      = ["0.0.0.0/0"]
   }
-}
-
-# SSH Access Configuration
-variable "enable_ssh" {
-  description = "Enable SSH access to Management Node"
-  type        = bool
-  default     = true
 }
 
 # Network Configuration
