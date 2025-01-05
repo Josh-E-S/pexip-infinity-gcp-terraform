@@ -10,55 +10,108 @@ output "validation_results" {
   }
 }
 
-# Network Outputs
-output "network_id" {
-  description = "The ID of the VPC network"
-  value       = google_compute_network.pexip_infinity_network.id
-}
-
-output "subnet_ids" {
-  description = "Map of subnet IDs by region"
-  value = {
-    for region, subnet in google_compute_subnetwork.pexip_subnets : region => subnet.id
-  }
-}
-
-output "firewall_rules" {
-  description = "List of created firewall rule names"
-  value = {
-    internal     = google_compute_firewall.allow_internal.name
-    management   = google_compute_firewall.allow_management.name
-    provisioning = google_compute_firewall.allow_provisioning.name
-    conferencing = google_compute_firewall.allow_conferencing.name
-  }
-}
-
 # Management Node Outputs
-output "management_node_details" {
-  description = "Details of the Management Node"
+output "management_node" {
+  description = "Management node details"
   value = {
-    name        = google_compute_instance.pexip_mgmt.name
-    instance_id = google_compute_instance.pexip_mgmt.instance_id
-    zone        = google_compute_instance.pexip_mgmt.zone
-    internal_ip = google_compute_instance.pexip_mgmt.network_interface[0].network_ip
-    external_ip = var.enable_public_ips ? google_compute_instance.pexip_mgmt.network_interface[0].access_config[0].nat_ip : "No external IP assigned"
-    url         = var.enable_public_ips ? "https://${google_compute_instance.pexip_mgmt.network_interface[0].access_config[0].nat_ip}" : "https://${google_compute_instance.pexip_mgmt.network_interface[0].network_ip}"
+    name         = google_compute_instance.management_node.name
+    internal_ip  = google_compute_instance.management_node.network_interface[0].network_ip
+    external_ip  = try(google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip, null)
+    machine_type = google_compute_instance.management_node.machine_type
+    zone        = google_compute_instance.management_node.zone
+    region      = local.primary_region
   }
 }
 
 # Conference Node Outputs
-output "conference_nodes" {
-  description = "Details of deployed Conference Nodes"
+output "transcoding_nodes" {
+  description = "Transcoding conference node details by region"
   value = {
-    for node in google_compute_instance.pexip_conf_nodes :
-    node.name => {
-      instance_id = node.instance_id
-      zone        = node.zone
-      internal_ip = node.network_interface[0].network_ip
-      external_ip = var.enable_public_ips ? node.network_interface[0].access_config[0].nat_ip : "No external IP assigned"
-      region      = split("-", node.zone)[0]
+    for region, instances in {
+      for k, v in google_compute_instance.transcoding_nodes : v.zone => v...
+    } : region => [
+      for instance in instances : {
+        name         = instance.name
+        internal_ip  = instance.network_interface[0].network_ip
+        external_ip  = try(instance.network_interface[0].access_config[0].nat_ip, null)
+        machine_type = instance.machine_type
+        zone        = instance.zone
+      }
+    ]
+  }
+}
+
+output "proxy_nodes" {
+  description = "Proxy conference node details by region"
+  value = {
+    for region, instances in {
+      for k, v in google_compute_instance.proxy_nodes : v.zone => v...
+    } : region => [
+      for instance in instances : {
+        name         = instance.name
+        internal_ip  = instance.network_interface[0].network_ip
+        external_ip  = try(instance.network_interface[0].access_config[0].nat_ip, null)
+        machine_type = instance.machine_type
+        zone        = instance.zone
+      }
+    ]
+  }
+}
+
+# Network Outputs
+output "network_details" {
+  description = "Network configuration details"
+  value = {
+    network_name = google_compute_network.pexip_infinity_network.name
+    subnets = {
+      for key, subnet in google_compute_subnetwork.pexip_subnets : key => {
+        name          = subnet.name
+        ip_cidr_range = subnet.ip_cidr_range
+        region        = subnet.region
+      }
     }
   }
+}
+
+# Summary Output
+output "deployment_summary" {
+  description = "Summary of the Pexip Infinity deployment"
+  value = {
+    project_id = var.project_id
+    regions    = keys(var.regions)
+    node_counts = {
+      management = 1
+      transcoding = {
+        for region, config in var.regions : region => config.conference_nodes.transcoding.count
+      }
+      proxy = {
+        for region, config in var.regions : region => try(config.conference_nodes.proxy.count, 0)
+      }
+    }
+    public_access = var.network_config.enable_public_ips
+  }
+}
+
+# Connection Information
+output "connection_info" {
+  description = "Connection information for Pexip Infinity"
+  value = {
+    management_interface = var.network_config.enable_public_ips ? format(
+      "https://%s",
+      google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip
+    ) : format(
+      "https://%s",
+      google_compute_instance.management_node.network_interface[0].network_ip
+    )
+    ssh_command = var.network_config.enable_public_ips ? format(
+      "ssh admin@%s",
+      google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip
+    ) : format(
+      "ssh admin@%s",
+      google_compute_instance.management_node.network_interface[0].network_ip
+    )
+  }
+  sensitive = false
 }
 
 # Storage Outputs
@@ -90,16 +143,5 @@ output "images" {
       name = google_compute_image.pexip_conf_image.name
       id   = google_compute_image.pexip_conf_image.id
     }
-  }
-}
-
-# Resource Summary
-output "deployment_summary" {
-  description = "Summary of deployed resources"
-  value = {
-    regions_deployed       = keys(var.conf_node_count)
-    total_conference_nodes = sum(values(var.conf_node_count))
-    public_access          = var.enable_public_ips ? "Enabled" : "Disabled"
-    environment            = var.environment
   }
 }

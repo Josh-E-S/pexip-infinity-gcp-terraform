@@ -247,3 +247,114 @@ variable "pexip_conf_image_source" {
   description = "Local path to Pexip Conference Node tar.gz image file"
   type        = string
 }
+
+# Protocol Configuration
+variable "enable_protocols" {
+  description = "Enable/disable core communication protocols"
+  type = object({
+    h323    = bool
+    sip     = bool
+    webrtc  = bool
+  })
+  default = {
+    h323    = true
+    sip     = true
+    webrtc  = true
+  }
+}
+
+# Management Node Services Configuration
+variable "mgmt_node_services" {
+  description = "Enable/disable Management Node services"
+  type = object({
+    ftp_backup      = bool
+    ldap            = bool
+    smtp            = bool
+    teams_event_hub = bool
+    exchange        = bool
+    cloud_bursting  = bool
+    usage_stats     = bool
+  })
+  default = {
+    ftp_backup      = false
+    ldap            = false
+    smtp            = true
+    teams_event_hub = false
+    exchange        = false
+    cloud_bursting  = false
+    usage_stats     = false
+  }
+}
+
+# Conference Node Services Configuration
+variable "conf_node_services" {
+  description = "Enable/disable Conference Node services"
+  type = object({
+    one_touch_join = bool
+    epic           = bool
+    ai_media       = bool
+    event_sink     = bool
+    ad_fs          = bool
+  })
+  default = {
+    one_touch_join = false
+    epic           = false
+    ai_media       = false
+    event_sink     = false
+    ad_fs          = false
+  }
+}
+
+# Shared Services Configuration
+variable "shared_services" {
+  description = "Enable/disable shared services available to both Management and Conference nodes"
+  type = object({
+    snmp      = bool
+    syslog    = bool
+    web_proxy = bool
+  })
+  default = {
+    snmp      = false
+    syslog    = true
+    web_proxy = false
+  }
+}
+
+# Service Ports Configuration
+variable "service_ports" {
+  description = "Custom port configurations for various services"
+  type = object({
+    smtp      = optional(number, 587)
+    syslog    = optional(number, 514)
+    web_proxy = optional(number, 8080)
+  })
+  default = {
+    smtp      = 587
+    syslog    = 514
+    web_proxy = 8080
+  }
+}
+
+# Service CIDR Configuration
+variable "service_cidrs" {
+  description = "CIDR ranges for different service types"
+  type = object({
+    mgmt_services   = list(string)
+    conf_services   = list(string)
+    shared_services = list(string)
+    peripheral      = list(string)
+  })
+  default = {
+    mgmt_services   = ["0.0.0.0/0"]
+    conf_services   = ["0.0.0.0/0"]
+    shared_services = ["0.0.0.0/0"]
+    peripheral      = ["0.0.0.0/0"]
+  }
+}
+
+# SSH Access Configuration
+variable "enable_ssh" {
+  description = "Enable SSH access to Management Node"
+  type        = bool
+  default     = true
+}
