@@ -2,11 +2,9 @@
 output "validation_results" {
   description = "Results of infrastructure validation checks"
   value = {
-    api_status         = local.api_status
-    sa_exists          = local.sa_exists
     cidr_ranges_valid  = local.validate_cidr_overlap
-    zones_valid        = local.validate_zones
-    supported_machines = local.supported_machine_types
+    primary_region     = local.primary_region
+    machine_types_valid = local.supported_machine_types
   }
 }
 

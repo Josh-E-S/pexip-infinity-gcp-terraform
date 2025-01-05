@@ -28,14 +28,6 @@ locals {
     "roles/iam.serviceAccountUser"
   ]
 
-  # Validate machine types are available in specified zones
-  supported_machine_types = {
-    "n2-highcpu-4"  = true
-    "n2-highcpu-8"  = true
-    "n2-highcpu-16" = true
-    "n2-highcpu-32" = true
-  }
-
   # Get primary region (priority = 1)
   primary_region = [
     for region, config in var.regions :
@@ -45,6 +37,12 @@ locals {
   # Validate CIDR ranges don't overlap
   all_cidrs = [for region in var.regions : region.cidr]
   validate_cidr_overlap = length(local.all_cidrs) == length(toset(local.all_cidrs))
+
+  # Validate machine types meet Pexip requirements
+  supported_machine_types = {
+    for type in ["n2-highcpu-4", "n2-highcpu-8", "n2-highcpu-16", "n2-highcpu-32"] :
+    type => contains(["n2", "n2d", "c2"], split("-", type)[0])
+  }
 }
 
 provider "google" {
@@ -69,29 +67,19 @@ resource "null_resource" "precondition_checks" {
     # Network validation
     precondition {
       condition     = local.validate_cidr_overlap
-      error_message = "Subnet CIDR ranges must not overlap."
-    }
-
-    # Machine type validation
-    precondition {
-      condition     = lookup(local.supported_machine_types, var.instance_configs.management.machine_type, false)
-      error_message = "${var.instance_configs.management.machine_type} is not a supported machine type for management node."
-    }
-
-    precondition {
-      condition     = lookup(local.supported_machine_types, var.instance_configs.conference_transcoding.machine_type, false)
-      error_message = "${var.instance_configs.conference_transcoding.machine_type} is not a supported machine type for transcoding nodes."
-    }
-
-    precondition {
-      condition     = lookup(local.supported_machine_types, var.instance_configs.conference_proxy.machine_type, false)
-      error_message = "${var.instance_configs.conference_proxy.machine_type} is not a supported machine type for proxy nodes."
+      error_message = "CIDR ranges must not overlap between regions."
     }
 
     # Primary region validation
     precondition {
       condition     = length(local.primary_region) > 0
       error_message = "Exactly one region must be designated as primary (priority = 1)."
+    }
+
+    # Machine type validation
+    precondition {
+      condition     = alltrue([for machine_type, is_valid in local.supported_machine_types : is_valid])
+      error_message = "One or more machine types do not meet Pexip's requirements. Use N2, N2D, or C2 series."
     }
   }
 }
