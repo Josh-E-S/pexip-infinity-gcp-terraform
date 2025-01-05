@@ -1,0 +1,176 @@
+# =============================================================================
+# Project Configuration
+# =============================================================================
+project_id = "your-project-id"
+
+# =============================================================================
+# Region and Zone Configuration
+# Define all regions and zones where you plan to deploy Pexip components
+# This serves as the source of truth for both networking and node deployment
+# =============================================================================
+deployment_regions = [
+  "us-central1",  # Primary region (first region is always primary)
+  "us-west1",     # Secondary region
+  "us-east1"      # Secondary region
+]
+
+# Define available zones for each region
+# These will be used by default for node deployment unless overridden
+region_zones = {
+  us-central1 = ["us-central1-a", "us-central1-b"]  # Primary region zones
+  us-west1    = ["us-west1-a"]                      # Secondary region zones
+  us-east1    = ["us-east1-b"]                      # Secondary region zones
+}
+
+# =============================================================================
+# Network Configuration
+# Configure VPC and subnet settings for your Pexip deployment
+# =============================================================================
+network_name         = "pexip-network"
+network_routing_mode = "REGIONAL"  # REGIONAL or GLOBAL
+
+# Subnet Configuration
+# Option 1: Auto-generate subnets (recommended for large deployments)
+auto_generate_subnets = true                # Set to false to use manual_subnet_cidrs
+network_cidr_base    = "10.0.0.0/16"       # Base CIDR for auto-generation
+network_subnet_size  = 24                  # Size of each subnet (/24)
+network_subnet_start = 0                   # Start numbering from 10.0.0.0
+
+# Option 2: Manual subnet configuration (used if auto_generate_subnets = false)
+manual_subnet_cidrs = {
+  us-central1 = "10.0.0.0/24"   # Primary region subnet
+  us-west1    = "10.0.1.0/24"   # Secondary region subnet
+  us-east1    = "10.0.2.0/24"   # Secondary region subnet
+}
+
+# =============================================================================
+# Management Node Configuration
+# Configure the single management node for your deployment
+# =============================================================================
+mgmt_node_name       = "pexip-mgmt"
+mgmt_node_hostname   = "mgmt"
+mgmt_node_domain     = "example.com"
+mgmt_node_gateway    = "10.0.0.1"
+mgmt_node_region     = "us-central1"        # Should be in primary region
+mgmt_node_zone       = "us-central1-a"
+mgmt_machine_type    = "n2-highcpu-4"
+mgmt_disk_size       = 100
+mgmt_disk_type       = "pd-ssd"
+mgmt_public_ip       = true                # Enable public IP for management node
+
+# Management Node Security
+mgmt_allowed_cidrs = {
+  ssh     = ["0.0.0.0/0"]  # Restrict SSH access in production
+  https   = ["0.0.0.0/0"]  # Restrict HTTPS access in production
+  snmp    = []             # Add CIDRs to enable SNMP access
+  syslog  = []             # Add CIDRs to enable syslog access
+}
+
+# =============================================================================
+# Conference Node Configuration
+# Configure transcoding and proxy nodes for your deployment
+# =============================================================================
+
+# Node Naming Configuration
+auto_generate_names    = true    # Set to false to use exact names from node configs
+node_name_format      = "%{prefix}-%{count}-%{region}"  # Used if auto_generate_names = true
+
+# Transcoding Node Configuration
+transcoding_name_prefix = "transcode"    # Used if auto_generate_names = true
+transcoding_nodes = {
+  "us-central1-high" = {
+    count        = 10
+    machine_type = "n2-highcpu-8"
+    disk_size    = 50
+    zones        = ["us-central1-a", "us-central1-b"]  # Optional: override region_zones
+    public_ip    = false                               # Enable public IP for these nodes
+  }
+  "us-central1-standard" = {
+    count        = 5
+    machine_type = "n2-highcpu-4"
+    disk_size    = 50
+    zones        = ["us-central1-a"]
+    public_ip    = false
+  }
+  "us-west1-high" = {
+    count        = 25
+    machine_type = "n2-highcpu-8"
+    disk_size    = 50
+    public_ip    = true                               # Public IPs for edge nodes
+  }  # Will use zones from region_zones if not specified
+}
+
+# Proxy Node Configuration
+proxy_name_prefix = "proxy"
+proxy_nodes = {
+  "us-central1-main" = {
+    count        = 3
+    machine_type = "n2-highcpu-4"
+    disk_size    = 50
+    zones        = ["us-central1-a"]
+    public_ip    = false
+  }
+  "us-central1-backup" = {
+    count        = 2
+    machine_type = "n2-highcpu-2"
+    disk_size    = 50
+    public_ip    = false
+  }
+}
+
+# Conference Node Security
+conference_allowed_cidrs = {
+  sip     = ["0.0.0.0/0"]  # SIP signaling access
+  h323    = ["0.0.0.0/0"]  # H.323 signaling access
+  webrtc  = ["0.0.0.0/0"]  # WebRTC access
+  media   = ["0.0.0.0/0"]  # Media stream access
+  snmp    = []             # SNMP monitoring access
+  syslog  = []             # Syslog access
+}
+
+# =============================================================================
+# Protocol and Service Configuration
+# Enable or disable specific protocols and services
+# =============================================================================
+
+# Core Protocol Configuration
+enable_protocols = {
+  sip    = true    # Enable SIP signaling
+  h323   = true    # Enable H.323 signaling
+  webrtc = true    # Enable WebRTC
+  media  = true    # Enable media streams
+}
+
+# Service Configuration
+enable_services = {
+  one_touch_join = true    # Enable One-Touch Join
+  teams         = true     # Enable Microsoft Teams integration
+  epic          = false    # Enable Epic integration
+  event_sink    = true     # Enable Event Sink
+  snmp          = false    # Enable SNMP monitoring
+  syslog        = true     # Enable Syslog
+  web_proxy     = false    # Enable Web Proxy
+  ssh           = true     # Enable SSH access
+}
+
+# =============================================================================
+# System Configuration
+# =============================================================================
+
+# DNS and NTP Configuration
+dns_servers = ["8.8.8.8", "8.8.4.4"]
+ntp_servers = ["pool.ntp.org"]
+
+# Authentication Configuration
+mgmt_node_admin_password_hash = "pbkdf2_sha256$260000$example_hash"  # Replace with actual hash
+mgmt_node_os_password_hash    = "$6$example_hash"                    # Replace with actual hash
+
+# Optional: SSH Configuration
+# ssh_public_key = "ssh-rsa AAAA... admin"  # If not provided, one will be generated
+
+# =============================================================================
+# Pexip Software Configuration
+# =============================================================================
+pexip_version           = "30"                              # Pexip Infinity version
+pexip_mgr_image_source  = "/path/to/management-node.tar.gz" # Local path to management node image
+pexip_conf_image_source = "/path/to/conference-node.tar.gz" # Local path to conference node image
