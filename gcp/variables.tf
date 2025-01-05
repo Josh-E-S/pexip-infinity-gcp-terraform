@@ -66,71 +66,181 @@ variable "regions" {
   }
 }
 
-# Firewall Configuration Map
-variable "firewall_rules" {
-  description = "Map of firewall rules configurations for different Pexip components"
-  type = map(object({
-    ports    = list(string)
-    protocol = string
-    priority = number
-    tags     = list(string)
-  }))
+# Protocol Port Configurations
+variable "protocol_ports" {
+  description = "Port configurations for core protocols"
+  type = object({
+    sip = object({
+      tcp_ports = list(number)
+      udp_ports = list(number)
+    })
+    h323 = object({
+      tcp_ports = list(number)
+      udp_ports = list(number)
+    })
+    media = object({
+      udp_port_range = object({
+        start = number
+        end   = number
+      })
+    })
+    webrtc = object({
+      tcp_ports = list(number)
+      udp_ports = list(number)
+    })
+  })
   default = {
-    management = {
-      ports    = ["443", "22"]
-      protocol = "tcp"
-      priority = 1000
-      tags     = ["pexip-management"]
+    sip = {
+      tcp_ports = [5060, 5061]
+      udp_ports = [5060, 5061]
     }
-    conference_transcoding = {
-      ports    = ["443", "1720", "5060", "5061", "33000-39999"]
-      protocol = "tcp"
-      priority = 1001
-      tags     = ["pexip-conference", "pexip-transcoding"]
+    h323 = {
+      tcp_ports = [1720, 1719]
+      udp_ports = [1719]
     }
-    conference_transcoding_udp = {
-      ports    = ["1719", "33000-39999", "40000-49999"]
-      protocol = "udp"
-      priority = 1002
-      tags     = ["pexip-conference", "pexip-transcoding"]
+    media = {
+      udp_port_range = {
+        start = 40000
+        end   = 49999
+      }
     }
-    conference_proxy = {
-      ports    = ["443", "5061", "40000-49999"]
-      protocol = "tcp"
-      priority = 1003
-      tags     = ["pexip-conference", "pexip-proxy"]
-    }
-    conference_proxy_udp = {
-      ports    = ["40000-49999"]
-      protocol = "udp"
-      priority = 1004
-      tags     = ["pexip-conference", "pexip-proxy"]
-    }
-    internal = {
-      ports    = [] # Allow all ports for internal communication
-      protocol = "all"
-      priority = 900
-      tags     = ["pexip-management", "pexip-conference"]
+    webrtc = {
+      tcp_ports = [443]
+      udp_ports = [40000, 49999]  # STUN/TURN ports
     }
   }
 }
 
-# Network Configuration Map
-variable "network_config" {
-  description = "Network configuration for Pexip deployment"
-  type = object({
-    name                     = string
-    routing_mode             = string
-    enable_public_ips        = bool
-    management_allowed_cidrs = list(string)
-    conference_allowed_cidrs = list(string)
-  })
+# Management Node Firewall Rules
+variable "mgmt_node_firewall_rules" {
+  description = "Firewall rules for management node services"
+  type = map(object({
+    description = string
+    tcp_ports   = list(number)
+    udp_ports   = list(number)
+    enabled     = bool
+  }))
   default = {
-    name                     = "pexip-infinity-network"
-    routing_mode             = "GLOBAL"
-    enable_public_ips        = false
-    management_allowed_cidrs = ["0.0.0.0/0"]
-    conference_allowed_cidrs = ["0.0.0.0/0"]
+    web_admin = {
+      description = "Web admin interface"
+      tcp_ports   = [443]
+      udp_ports   = []
+      enabled     = true
+    }
+    ssh = {
+      description = "SSH access"
+      tcp_ports   = [22]
+      udp_ports   = []
+      enabled     = true
+    }
+    ldap = {
+      description = "LDAP authentication"
+      tcp_ports   = [389, 636]
+      udp_ports   = []
+      enabled     = false
+    }
+    snmp = {
+      description = "SNMP monitoring"
+      tcp_ports   = []
+      udp_ports   = [161]
+      enabled     = false
+    }
+    syslog = {
+      description = "Syslog"
+      tcp_ports   = [514]
+      udp_ports   = [514]
+      enabled     = false
+    }
+    smtp = {
+      description = "SMTP email"
+      tcp_ports   = [25, 587]
+      udp_ports   = []
+      enabled     = false
+    }
+  }
+}
+
+# Conference Node Firewall Rules
+variable "conference_node_firewall_rules" {
+  description = "Firewall rules for conference node services"
+  type = map(object({
+    description = string
+    tcp_ports   = list(number)
+    udp_ports   = list(number)
+    enabled     = bool
+    node_types  = list(string)  # ["transcoding"], ["proxy"], or ["transcoding", "proxy"]
+  }))
+  default = {
+    sip = {
+      description = "SIP signaling"
+      tcp_ports   = [5060, 5061]
+      udp_ports   = [5060, 5061]
+      enabled     = true
+      node_types  = ["transcoding", "proxy"]
+    }
+    h323 = {
+      description = "H.323 signaling"
+      tcp_ports   = [1720]
+      udp_ports   = [1719]
+      enabled     = true
+      node_types  = ["transcoding", "proxy"]
+    }
+    media = {
+      description = "Media ports"
+      tcp_ports   = []
+      udp_ports   = [40000, 49999]  # Range will be handled in the firewall rule
+      enabled     = true
+      node_types  = ["transcoding", "proxy"]
+    }
+    webrtc = {
+      description = "WebRTC"
+      tcp_ports   = [443]
+      udp_ports   = []
+      enabled     = true
+      node_types  = ["transcoding", "proxy"]
+    }
+    one_touch_join = {
+      description = "One-Touch Join"
+      tcp_ports   = [443]
+      udp_ports   = []
+      enabled     = false
+      node_types  = ["transcoding"]
+    }
+    teams = {
+      description = "Microsoft Teams integration"
+      tcp_ports   = [443]
+      udp_ports   = []
+      enabled     = false
+      node_types  = ["transcoding"]
+    }
+    epic = {
+      description = "Epic integration"
+      tcp_ports   = [443]
+      udp_ports   = []
+      enabled     = false
+      node_types  = ["transcoding"]
+    }
+    event_sink = {
+      description = "Event Sink"
+      tcp_ports   = [443]
+      udp_ports   = []
+      enabled     = false
+      node_types  = ["transcoding"]
+    }
+    snmp = {
+      description = "SNMP monitoring"
+      tcp_ports   = []
+      udp_ports   = [161]
+      enabled     = false
+      node_types  = ["transcoding", "proxy"]
+    }
+    syslog = {
+      description = "Syslog"
+      tcp_ports   = [514]
+      udp_ports   = [514]
+      enabled     = false
+      node_types  = ["transcoding", "proxy"]
+    }
   }
 }
 

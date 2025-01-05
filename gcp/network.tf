@@ -15,88 +15,107 @@ resource "google_compute_subnetwork" "pexip_subnets" {
 }
 
 # Management Node Firewall Rules
-resource "google_compute_firewall" "allow_management" {
-  name    = "${var.network_config.name}-allow-management"
-  network = google_compute_network.pexip_infinity_network.name
-
-  source_ranges = var.network_config.management_allowed_cidrs
-  target_tags   = var.firewall_rules.management.tags
-
-  allow {
-    protocol = var.firewall_rules.management.protocol
-    ports    = var.firewall_rules.management.ports
+resource "google_compute_firewall" "mgmt_node_rules" {
+  for_each = {
+    for name, rule in var.mgmt_node_firewall_rules :
+    name => rule
+    if rule.enabled
   }
 
+  name    = "${var.network_config.name}-mgmt-${each.key}"
+  network = google_compute_network.pexip_infinity_network.name
+
   dynamic "allow" {
-    for_each = var.enable_ssh ? [1] : []
+    for_each = length(each.value.tcp_ports) > 0 ? [1] : []
     content {
       protocol = "tcp"
-      ports    = ["22"]
+      ports    = [for port in each.value.tcp_ports : tostring(port)]
     }
   }
 
-  priority = var.firewall_rules.management.priority
+  dynamic "allow" {
+    for_each = length(each.value.udp_ports) > 0 ? [1] : []
+    content {
+      protocol = "udp"
+      ports    = [for port in each.value.udp_ports : tostring(port)]
+    }
+  }
+
+  target_tags   = var.instance_configs.management.tags
+  source_ranges = var.service_cidrs.mgmt_services
 }
 
-# Conference Node Firewall Rules (Transcoding)
-resource "google_compute_firewall" "allow_conference_transcoding" {
-  name    = "${var.network_config.name}-allow-conference-transcoding"
+# Conference Node Firewall Rules
+resource "google_compute_firewall" "conference_node_rules" {
+  for_each = {
+    for name, rule in var.conference_node_firewall_rules :
+    name => rule
+    if rule.enabled
+  }
+
+  name    = "${var.network_config.name}-conf-${each.key}"
   network = google_compute_network.pexip_infinity_network.name
 
-  source_ranges = var.network_config.conference_allowed_cidrs
-  target_tags   = var.firewall_rules.conference_transcoding.tags
-
-  # TCP Rules
-  allow {
-    protocol = var.firewall_rules.conference_transcoding.protocol
-    ports    = var.firewall_rules.conference_transcoding.ports
+  dynamic "allow" {
+    for_each = length(each.value.tcp_ports) > 0 ? [1] : []
+    content {
+      protocol = "tcp"
+      ports    = [for port in each.value.tcp_ports : tostring(port)]
+    }
   }
 
-  # UDP Rules
-  allow {
-    protocol = var.firewall_rules.conference_transcoding_udp.protocol
-    ports    = var.firewall_rules.conference_transcoding_udp.ports
+  dynamic "allow" {
+    for_each = length(each.value.udp_ports) > 0 ? [1] : []
+    content {
+      protocol = "udp"
+      ports    = [for port in each.value.udp_ports : tostring(port)]
+    }
   }
 
-  priority = var.firewall_rules.conference_transcoding.priority
+  # Apply to transcoding and/or proxy nodes based on node_types
+  target_tags = flatten([
+    contains(each.value.node_types, "transcoding") ? var.instance_configs.conference_transcoding.tags : [],
+    contains(each.value.node_types, "proxy") ? var.instance_configs.conference_proxy.tags : []
+  ])
+
+  source_ranges = var.service_cidrs.conf_services
 }
 
-# Conference Node Firewall Rules (Proxy)
-resource "google_compute_firewall" "allow_conference_proxy" {
-  name    = "${var.network_config.name}-allow-conference-proxy"
+# Media Port Range Rules (special handling for ranges)
+resource "google_compute_firewall" "media_ports" {
+  count = var.conference_node_firewall_rules.media.enabled ? 1 : 0
+
+  name    = "${var.network_config.name}-media-ports"
   network = google_compute_network.pexip_infinity_network.name
 
-  source_ranges = var.network_config.conference_allowed_cidrs
-  target_tags   = var.firewall_rules.conference_proxy.tags
-
-  # TCP Rules
   allow {
-    protocol = var.firewall_rules.conference_proxy.protocol
-    ports    = var.firewall_rules.conference_proxy.ports
+    protocol = "udp"
+    ports    = ["${var.protocol_ports.media.udp_port_range.start}-${var.protocol_ports.media.udp_port_range.end}"]
   }
 
-  # UDP Rules
-  allow {
-    protocol = var.firewall_rules.conference_proxy_udp.protocol
-    ports    = var.firewall_rules.conference_proxy_udp.ports
-  }
-
-  priority = var.firewall_rules.conference_proxy.priority
+  target_tags   = concat(var.instance_configs.conference_transcoding.tags, var.instance_configs.conference_proxy.tags)
+  source_ranges = var.service_cidrs.conf_services
 }
 
-# Internal Communication Rules
-resource "google_compute_firewall" "allow_internal" {
-  name    = "${var.network_config.name}-allow-internal"
+# Internal Network Communication (between nodes)
+resource "google_compute_firewall" "internal_communication" {
+  name    = "${var.network_config.name}-internal"
   network = google_compute_network.pexip_infinity_network.name
 
-  source_tags = var.firewall_rules.internal.tags
-  target_tags = var.firewall_rules.internal.tags
-
   allow {
-    protocol = var.firewall_rules.internal.protocol
+    protocol = "all"
   }
 
-  priority = var.firewall_rules.internal.priority
+  source_tags = concat(
+    var.instance_configs.management.tags,
+    var.instance_configs.conference_transcoding.tags,
+    var.instance_configs.conference_proxy.tags
+  )
+  target_tags = concat(
+    var.instance_configs.management.tags,
+    var.instance_configs.conference_transcoding.tags,
+    var.instance_configs.conference_proxy.tags
+  )
 }
 
 # Core protocols for Conference Nodes

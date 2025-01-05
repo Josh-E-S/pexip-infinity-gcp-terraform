@@ -1,0 +1,202 @@
+# Project Configuration
+project_id = "my-pexip-project-id"
+
+# Region Configuration
+regions = {
+  us-central1 = {
+    priority = 1  # Primary region with management node
+    cidr     = "10.0.0.0/24"
+    conference_nodes = {
+      transcoding = {
+        count = 2
+        zones = ["us-central1-a", "us-central1-b"]
+        config = {
+          machine_type = "n2-highcpu-4"
+          disk_size   = 50
+        }
+      }
+      proxy = {
+        count = 1
+        zones = ["us-central1-a"]
+        config = {
+          machine_type = "n2-highcpu-4"
+          disk_size   = 50
+        }
+      }
+    }
+  }
+  us-west1 = {
+    priority = 2
+    cidr     = "10.0.1.0/24"
+    conference_nodes = {
+      transcoding = {
+        count = 1
+        zones = ["us-west1-a"]
+        config = {
+          machine_type = "n2-highcpu-8"
+          disk_size   = 50
+        }
+      }
+      proxy = {
+        count = 0
+        zones = []
+      }
+    }
+  }
+  us-east1 = {
+    priority = 3
+    cidr     = "10.0.2.0/24"
+    conference_nodes = {
+      transcoding = {
+        count = 1
+        zones = ["us-east1-b"]
+        config = {
+          machine_type = "n2-highcpu-8"
+          disk_size   = 50
+        }
+      }
+      proxy = {
+        count = 0
+        zones = []
+      }
+    }
+  }
+}
+
+# Instance Configurations
+instance_configs = {
+  management = {
+    machine_type = "n2-highcpu-4"
+    disk_size   = 100
+    disk_type   = "pd-ssd"
+    tags        = ["pexip-management"]
+  }
+  conference_transcoding = {
+    machine_type = "n2-highcpu-4"
+    disk_size   = 50
+    disk_type   = "pd-ssd"
+    tags        = ["pexip-conference", "pexip-transcoding"]
+  }
+  conference_proxy = {
+    machine_type = "n2-highcpu-4"
+    disk_size   = 50
+    disk_type   = "pd-ssd"
+    tags        = ["pexip-conference", "pexip-proxy"]
+  }
+}
+
+# Network Configuration
+network_config = {
+  name                     = "pexip-network"
+  routing_mode             = "REGIONAL"
+  enable_public_ips        = true  # Proxy in primary region and transcoding in secondary regions will get public IPs
+}
+
+# Service CIDRs (Restrict these in production)
+service_cidrs = {
+  conf_services = ["0.0.0.0/0"]  # CIDRs allowed to access conference nodes
+  mgmt_services = ["0.0.0.0/0"]  # CIDRs allowed to access management node
+}
+
+# Core Protocol Configuration
+protocol_ports = {
+  sip = {
+    tcp_ports = [5060, 5061]  # Standard SIP ports
+    udp_ports = [5060, 5061]
+  }
+  h323 = {
+    tcp_ports = [1720, 1719]  # H.323 signaling
+    udp_ports = [1719]
+  }
+  media = {
+    udp_port_range = {
+      start = 40000  # Media port range
+      end   = 49999
+    }
+  }
+  webrtc = {
+    tcp_ports = [443]  # WebRTC/HTTPS
+    udp_ports = [40000, 49999]  # STUN/TURN
+  }
+}
+
+# Management Node Firewall Rules
+mgmt_node_firewall_rules = {
+  web_admin = {
+    enabled = true  # HTTPS access to admin interface
+  }
+  ssh = {
+    enabled = true  # SSH access
+  }
+  ldap = {
+    enabled = true  # LDAP authentication
+  }
+  snmp = {
+    enabled = false  # SNMP monitoring
+  }
+  syslog = {
+    enabled = true  # Syslog
+  }
+  smtp = {
+    enabled = true  # Email notifications
+  }
+}
+
+# Conference Node Firewall Rules
+conference_node_firewall_rules = {
+  sip = {
+    enabled = true  # SIP signaling
+  }
+  h323 = {
+    enabled = true  # H.323 signaling
+  }
+  media = {
+    enabled = true  # Media ports
+  }
+  webrtc = {
+    enabled = true  # WebRTC
+  }
+  one_touch_join = {
+    enabled = true  # One-Touch Join
+  }
+  teams = {
+    enabled = true  # Microsoft Teams integration
+  }
+  epic = {
+    enabled = false  # Epic integration
+  }
+  event_sink = {
+    enabled = true  # Event Sink
+  }
+  snmp = {
+    enabled = false  # SNMP monitoring
+  }
+  syslog = {
+    enabled = true  # Syslog
+  }
+}
+
+# Management Node Configuration
+mgmt_node_name              = "pexip-mgmt"
+mgmt_node_hostname          = "mgmt"
+mgmt_node_domain           = "example.com"
+mgmt_node_gateway          = "10.0.0.1"
+mgmt_node_admin_password_hash = "pbkdf2_sha256$260000$example_hash"  # Replace with actual hash
+mgmt_node_os_password_hash    = "$6$example_hash"                    # Replace with actual hash
+
+# DNS and NTP Configuration
+dns_servers = ["8.8.8.8", "8.8.4.4"]
+ntp_servers = ["time.google.com"]
+
+# Feature Flags
+enable_error_reporting = true
+enable_analytics      = true
+enable_ssh           = true
+
+# Optional: Provide your own SSH public key (if not provided, one will be generated)
+# ssh_public_key = "ssh-rsa AAAA... admin"
+
+# Pexip Image Configuration
+pexip_version           = "30"  # Pexip Infinity version
+pexip_mgr_image_source  = "/path/to/management-node.tar.gz"
+pexip_conf_image_source = "/path/to/conference-node.tar.gz"
