@@ -60,46 +60,30 @@ variable "manual_subnet_cidrs" {
 variable "mgmt_node" {
   description = "Management node configuration"
   type = object({
-    name         = optional(string)    # Optional manual name override
+    name = optional(string)
     machine_type = string
     disk_size    = number
     disk_type    = optional(string, "pd-standard")
-    region       = string
     zone         = string
+    region       = string
     public_ip    = bool
 
     # Network Configuration
     hostname    = string
     domain      = string
     gateway_ip  = string
+    subnet_cidr = string
 
     # Authentication
-    admin_username       = string
-    admin_password_hash  = string  # PBKDF2 with HMAC-SHA256 (Django-style)
-    os_password_hash     = string  # SHA-512
+    admin_username      = string
+    admin_password_hash = string  # PBKDF2 with HMAC-SHA256 (Django-style)
+    os_password_hash    = string  # SHA-512
 
     # Optional Services
     enable_error_reporting = optional(bool, false)
     enable_analytics      = optional(bool, false)
-
-    # Service Access
-    allowed_cidrs = object({
-      admin_ui = list(string)  # Web UI access
-      ssh      = list(string)  # SSH access
-    })
-
-    # Optional Service CIDRs
-    service_cidrs = object({
-      directory = list(string)  # LDAP/AD
-      smtp      = list(string)  # Email
-      syslog    = list(string)  # Syslog
-    })
+    additional_tags       = optional(list(string), [])
   })
-
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.mgmt_node.hostname))
-    error_message = "Hostname must contain only lowercase letters, numbers, and hyphens."
-  }
 }
 
 # =============================================================================
@@ -144,19 +128,13 @@ variable "proxy_node_name" {
   default     = "pexip-proxy"
 }
 
-variable "conference_node_name" {
-  description = "Base name for conference node instances"
-  type        = string
-  default     = "pexip-conference"
-}
-
 # =============================================================================
 # Transcoding Node Variables
 # =============================================================================
 variable "transcoding_nodes" {
   description = "Transcoding node configurations"
   type = map(object({
-    name         = optional(string)    # Optional manual name override
+    name         = optional(string) # Optional manual name override
     machine_type = string
     disk_size    = number
     disk_type    = optional(string, "pd-standard")
@@ -174,9 +152,9 @@ variable "transcoding_nodes" {
 
     enable_services = object({
       one_touch_join = bool
-      event_sink    = bool
-      epic          = bool
-      captions      = bool
+      event_sink     = bool
+      epic           = bool
+      captions       = bool
     })
   }))
 }
@@ -187,7 +165,7 @@ variable "transcoding_nodes" {
 variable "proxy_nodes" {
   description = "Proxy node configurations"
   type = map(object({
-    name         = optional(string)    # Optional manual name override
+    name         = optional(string) # Optional manual name override
     machine_type = string
     disk_size    = number
     disk_type    = optional(string, "pd-standard")

@@ -2,7 +2,7 @@ locals {
   # =============================================================================
   # Network Processing
   # =============================================================================
-  
+
   # Process subnet configurations
   subnet_configs = var.auto_generate_subnets ? {
     for idx, region in keys(var.transcoding_nodes) :
@@ -18,12 +18,12 @@ locals {
   # =============================================================================
   # Node Type Tags
   # =============================================================================
-  
+
   # Base tags for different node types
   base_tags = {
     management  = ["pexip", "pexip-management"]
     transcoding = ["pexip", "pexip-conference", "pexip-transcoding"]
-    proxy      = ["pexip", "pexip-conference", "pexip-proxy"]
+    proxy       = ["pexip", "pexip-conference", "pexip-proxy"]
   }
 
   # Generate protocol-specific tags based on enabled protocols
@@ -31,14 +31,14 @@ locals {
     for node_type, nodes in {
       "transcoding" = var.transcoding_nodes
       "proxy"       = var.proxy_nodes
-    } : node_type => distinct(flatten([
-      for name, node in nodes : [
-        node.enable_protocols.sip ? "pexip-sip" : [],
-        node.enable_protocols.h323 ? "pexip-h323" : [],
-        node.enable_protocols.webrtc ? "pexip-webrtc" : [],
-        node.enable_protocols.teams ? "pexip-teams" : [],
-        node.enable_protocols.gmeet ? "pexip-gmeet" : []
-      ]
+      } : node_type => distinct(flatten([
+        for name, node in nodes : [
+          node.enable_protocols.sip ? "pexip-sip" : [],
+          node.enable_protocols.h323 ? "pexip-h323" : [],
+          node.enable_protocols.webrtc ? "pexip-webrtc" : [],
+          node.enable_protocols.teams ? "pexip-teams" : [],
+          node.enable_protocols.gmeet ? "pexip-gmeet" : []
+        ]
     ]))
   }
 
@@ -94,9 +94,9 @@ locals {
   conference_node_common_rules = {
     # Core media services
     media = {
-      name        = "pexip-conference-media"
-      description = "Conference node media traffic"
-      direction   = "INGRESS"
+      name          = "pexip-conference-media"
+      description   = "Conference node media traffic"
+      direction     = "INGRESS"
       source_ranges = var.conference_node_defaults.core_service_cidrs.media
       allow = [
         {
@@ -109,9 +109,9 @@ locals {
 
     # Internal communication
     internal = {
-      name        = "pexip-internal"
-      description = "Inter-node communication"
-      direction   = "INGRESS"
+      name          = "pexip-internal"
+      description   = "Inter-node communication"
+      direction     = "INGRESS"
       source_ranges = var.conference_node_defaults.core_service_cidrs.internal
       allow = [
         {

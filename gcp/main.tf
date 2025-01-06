@@ -42,22 +42,6 @@ locals {
       } : {}
     )
   }
-
-  # Conference node configuration defaults
-  conference_node_config = {
-    transcoding = {
-      tags = concat(["pexip", "conference", "transcoding"], try(var.transcoding_node_defaults.additional_tags, []))
-      metadata = {
-        startup-script = file("${path.module}/scripts/conference_node_startup.sh")
-      }
-    }
-    proxy = {
-      tags = concat(["pexip", "conference", "proxy"], try(var.proxy_node_defaults.additional_tags, []))
-      metadata = {
-        startup-script = file("${path.module}/scripts/conference_node_startup.sh")
-      }
-    }
-  }
 }
 
 # =============================================================================

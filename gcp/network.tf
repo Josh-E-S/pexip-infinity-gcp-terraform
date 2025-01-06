@@ -158,23 +158,23 @@ resource "google_compute_firewall" "service_rules" {
 
 # DNS and NTP access
 resource "google_compute_firewall" "system_services" {
-  name          = "pexip-system-services"
-  network       = google_compute_network.pexip_network.name
-  description   = "System services (DNS and NTP)"
-  direction     = "EGRESS"
+  name        = "pexip-system-services"
+  network     = google_compute_network.pexip_network.name
+  description = "System services (DNS and NTP)"
+  direction   = "EGRESS"
   destination_ranges = distinct(concat(
     local.system_configs.dns_config.cidrs,
     local.system_configs.ntp_config.cidrs
   ))
-  target_tags   = ["pexip"]
+  target_tags = ["pexip"]
 
   allow {
     protocol = "udp"
-    ports    = ["53", "123"]  # DNS and NTP ports
+    ports    = ["53", "123"] # DNS and NTP ports
   }
 
   allow {
     protocol = "tcp"
-    ports    = ["53"]  # DNS over TCP
+    ports    = ["53"] # DNS over TCP
   }
 }

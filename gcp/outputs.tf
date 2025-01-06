@@ -8,7 +8,7 @@ output "validation_results" {
     network = {
       subnet_generation = var.auto_generate_subnets ? "auto" : "manual"
       subnet_regions    = keys(local.subnet_configs)
-      cidrs            = [for subnet in local.subnet_configs : subnet.cidr]
+      cidrs             = [for subnet in local.subnet_configs : subnet.cidr]
     }
     nodes = {
       management = {
@@ -27,7 +27,7 @@ output "validation_results" {
     machine_types = {
       management  = var.mgmt_node.machine_type
       transcoding = distinct([for node in var.transcoding_nodes : node.machine_type])
-      proxy      = distinct([for node in var.proxy_nodes : node.machine_type])
+      proxy       = distinct([for node in var.proxy_nodes : node.machine_type])
     }
   }
 }
@@ -114,18 +114,18 @@ output "deployment_summary" {
     project_id    = var.project_id
     environment   = var.environment
     pexip_version = var.pexip_version
-    
+
     nodes = {
       management = {
-        count = 1
+        count         = 1
         public_access = var.mgmt_node.public_ip
       }
       transcoding = {
-        count = length(var.transcoding_nodes)
+        count   = length(var.transcoding_nodes)
         regions = distinct([for node in var.transcoding_nodes : node.region])
       }
       proxy = {
-        count = length(var.proxy_nodes)
+        count   = length(var.proxy_nodes)
         regions = distinct([for node in var.proxy_nodes : node.region])
       }
     }

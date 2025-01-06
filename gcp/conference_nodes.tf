@@ -61,7 +61,7 @@ resource "google_compute_address" "transcoding_public_ips" {
     if node.public_ip
   }
 
-  name         = coalesce(try(each.value.name, null), "${var.transcoding_node_name}-${each.key}")-ip
+  name         = coalesce(try(each.value.name, null), "${var.transcoding_node_name}-${each.key}") - ip
   region       = each.value.region
   address_type = "EXTERNAL"
   network_tier = "PREMIUM"
@@ -130,7 +130,7 @@ resource "google_compute_address" "proxy_public_ips" {
     if node.public_ip
   }
 
-  name         = coalesce(try(each.value.name, null), "${var.proxy_node_name}-${each.key}")-ip
+  name         = coalesce(try(each.value.name, null), "${var.proxy_node_name}-${each.key}") - ip
   region       = each.value.region
   address_type = "EXTERNAL"
   network_tier = "PREMIUM"
