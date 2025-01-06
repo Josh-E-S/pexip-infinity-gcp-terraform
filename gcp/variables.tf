@@ -60,7 +60,7 @@ variable "manual_subnet_cidrs" {
 variable "mgmt_node" {
   description = "Management node configuration"
   type = object({
-    name = optional(string)
+    name         = optional(string)
     machine_type = string
     disk_size    = number
     disk_type    = optional(string, "pd-standard")
@@ -76,13 +76,13 @@ variable "mgmt_node" {
 
     # Authentication
     admin_username      = string
-    admin_password_hash = string  # PBKDF2 with HMAC-SHA256 (Django-style)
-    os_password_hash    = string  # SHA-512
+    admin_password_hash = string # PBKDF2 with HMAC-SHA256 (Django-style)
+    os_password_hash    = string # SHA-512
 
     # Optional Services
     enable_error_reporting = optional(bool, false)
-    enable_analytics      = optional(bool, false)
-    additional_tags       = optional(list(string), [])
+    enable_analytics       = optional(bool, false)
+    additional_tags        = optional(list(string), [])
   })
 }
 
@@ -342,13 +342,13 @@ variable "service_ports" {
 
 # Authentication Variables
 variable "mgmt_node_admin_password_hash" {
-  description = "Password hash for management node admin user"
+  description = "Password hash for management node admin user (PBKDF2 with HMAC-SHA256)"
   type        = string
   sensitive   = true
 }
 
 variable "mgmt_node_os_password_hash" {
-  description = "Password hash for management node OS user"
+  description = "Password hash for management node OS user (SHA-512)"
   type        = string
   sensitive   = true
 }

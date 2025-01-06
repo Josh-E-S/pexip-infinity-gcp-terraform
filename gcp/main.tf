@@ -98,12 +98,12 @@ resource "null_resource" "precondition_checks" {
 
     # DNS and NTP Configuration
     precondition {
-      condition = length(local.system_configs.dns_config.servers) > 0
+      condition     = length(local.system_configs.dns_config.servers) > 0
       error_message = "At least one DNS server must be configured"
     }
 
     precondition {
-      condition = length(local.system_configs.ntp_config.servers) > 0
+      condition     = length(local.system_configs.ntp_config.servers) > 0
       error_message = "At least one NTP server must be configured"
     }
   }

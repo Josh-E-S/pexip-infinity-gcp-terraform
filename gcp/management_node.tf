@@ -48,8 +48,8 @@ resource "google_compute_instance" "management_node" {
         dns              = join(",", local.system_configs.dns_config.servers)
         ntp              = join(",", local.system_configs.ntp_config.servers)
         user             = var.mgmt_node.admin_username
-        pass             = var.mgmt_node.admin_password_hash
-        admin_password   = var.mgmt_node.os_password_hash
+        pass             = var.mgmt_node_admin_password_hash
+        admin_password   = var.mgmt_node_os_password_hash
         error_reports    = var.mgmt_node.enable_error_reporting
         enable_analytics = var.mgmt_node.enable_analytics
       })
