@@ -1,120 +1,126 @@
-# Local variables for validation
-locals {
-  # Get primary region (priority = 1)
-  primary_region = [
-    for region, config in var.regions :
-    region if config.priority == 1
-  ][0]
+# =============================================================================
+# Provider Configuration
+# =============================================================================
 
-  # Validate CIDR ranges don't overlap
-  all_cidrs             = [for region in var.regions : region.cidr]
-  validate_cidr_overlap = length(local.all_cidrs) == length(toset(local.all_cidrs))
-
-  # Validate machine types meet Pexip requirements
-  supported_machine_types = {
-    for type in ["n2-highcpu-4", "n2-highcpu-8", "n2-highcpu-16", "n2-highcpu-32"] :
-    type => contains(["n2", "n2d", "c2"], split("-", type)[0])
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 4.0"
+    }
   }
 }
 
-provider "google" {
-  project = var.project_id
-  region  = local.primary_region
+# =============================================================================
+# Local Variables
+# =============================================================================
+
+locals {
+  # System configuration defaults
+  system_configs = {
+    dns_config = {
+      servers = coalesce(var.dns_servers, ["8.8.8.8", "8.8.4.4"])
+    }
+    ntp_config = {
+      servers = coalesce(var.ntp_servers, ["time.google.com"])
+    }
+  }
+
+  # SSH key configuration
+  ssh_public_key = var.ssh_key_path != null ? "${var.mgmt_node.admin_username}:${file(var.ssh_key_path)}" : null
+
+  # Management node configuration defaults
+  mgmt_node_config = {
+    tags = concat(["pexip", "management"], try(var.mgmt_node.additional_tags, []))
+    metadata = merge(
+      {
+        startup-script = file("${path.module}/scripts/mgmt_node_startup.sh")
+      },
+      local.ssh_public_key != null ? {
+        ssh-keys = local.ssh_public_key
+      } : {}
+    )
+  }
+
+  # Conference node configuration defaults
+  conference_node_config = {
+    transcoding = {
+      tags = concat(["pexip", "conference", "transcoding"], try(var.transcoding_node_defaults.additional_tags, []))
+      metadata = {
+        startup-script = file("${path.module}/scripts/conference_node_startup.sh")
+      }
+    }
+    proxy = {
+      tags = concat(["pexip", "conference", "proxy"], try(var.proxy_node_defaults.additional_tags, []))
+      metadata = {
+        startup-script = file("${path.module}/scripts/conference_node_startup.sh")
+      }
+    }
+  }
 }
 
-# Comprehensive precondition checks
+# =============================================================================
+# Validation Checks
+# =============================================================================
+
 resource "null_resource" "precondition_checks" {
   lifecycle {
-    # Required variables checks
-    precondition {
-      condition     = var.mgmt_node_admin_password_hash != null && var.mgmt_node_admin_password_hash != ""
-      error_message = "Management node admin password hash must be provided."
-    }
-
-    precondition {
-      condition     = var.mgmt_node_os_password_hash != null && var.mgmt_node_os_password_hash != ""
-      error_message = "Management node OS password hash must be provided."
-    }
-
-    # Network validation
-    precondition {
-      condition     = local.validate_cidr_overlap
-      error_message = "CIDR ranges must not overlap between regions."
-    }
-
-    # Primary region validation
-    precondition {
-      condition     = length(local.primary_region) > 0
-      error_message = "Exactly one region must be designated as primary (priority = 1)."
-    }
-
-    # Management node bootstrap values validation
+    # Management Node Password Validation
     precondition {
       condition = (
-        var.mgmt_node_admin_password_hash != "" &&
-        var.mgmt_node_os_password_hash != "" &&
-        can(regex("^\\$pbkdf2-sha256\\$", var.mgmt_node_admin_password_hash)) &&
-        can(regex("^\\$6\\$rounds=", var.mgmt_node_os_password_hash))
+        var.mgmt_node.admin_password_hash != "" &&
+        var.mgmt_node.os_password_hash != "" &&
+        can(regex("^\\$pbkdf2-sha256\\$", var.mgmt_node.admin_password_hash)) &&
+        can(regex("^\\$6\\$rounds=", var.mgmt_node.os_password_hash))
       )
-      error_message = "Management node password hashes must be provided and in correct format. Admin password should be PBKDF2-SHA256 and OS password should be SHA-512. Use the password generation tool in tools/generate_passwords.py"
+      error_message = "Management node password hashes must be in correct format (PBKDF2-SHA256 for admin, SHA-512 for OS)"
     }
 
+    # Management Node Network Configuration
     precondition {
       condition = (
-        var.mgmt_node_hostname != "" &&
-        can(regex("^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9]$", var.mgmt_node_hostname)) &&
-        length(var.mgmt_node_hostname) <= 64
+        can(regex("^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9]$", var.mgmt_node.hostname)) &&
+        can(regex("^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$", var.mgmt_node.domain)) &&
+        can(cidrhost(var.mgmt_node.subnet_cidr, 1))
       )
-      error_message = "Hostname must be a valid DNS label (alphanumeric, hyphens allowed in middle, max 64 chars)"
+      error_message = "Invalid management node network configuration"
     }
 
+    # Conference Node Configuration
     precondition {
-      condition = (
-        var.mgmt_node_domain != "" &&
-        can(regex("^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$", var.mgmt_node_domain)) &&
-        length(var.mgmt_node_domain) <= 253
-      )
-      error_message = "Domain must be a valid DNS domain name"
-    }
-
-    precondition {
-      condition = (
-        var.mgmt_node_gateway != "" &&
-        can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", var.mgmt_node_gateway)) &&
-        alltrue([for octet in split(".", var.mgmt_node_gateway) : tonumber(octet) >= 0 && tonumber(octet) <= 255])
-      )
-      error_message = "Gateway must be a valid IPv4 address"
-    }
-
-    precondition {
-      condition = length(var.dns_servers) > 0 && alltrue([
-        for dns in var.dns_servers :
-        can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", dns)) &&
-        alltrue([for octet in split(".", dns) : tonumber(octet) >= 0 && tonumber(octet) <= 255])
+      condition = alltrue([
+        for _, node in var.transcoding_nodes : contains(keys(local.subnet_configs), node.region)
       ])
-      error_message = "At least one valid DNS server IPv4 address must be provided"
+      error_message = "All transcoding nodes must be in regions with defined subnets"
     }
 
     precondition {
-      condition = length(var.ntp_servers) > 0 && alltrue([
-        for ntp in var.ntp_servers :
-        can(regex("^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$", ntp)) ||
-        (
-          can(regex("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$", ntp)) &&
-          alltrue([for octet in split(".", ntp) : tonumber(octet) >= 0 && tonumber(octet) <= 255])
-        )
+      condition = alltrue([
+        for _, node in var.proxy_nodes : contains(keys(local.subnet_configs), node.region)
       ])
-      error_message = "At least one valid NTP server (hostname or IPv4) must be provided"
+      error_message = "All proxy nodes must be in regions with defined subnets"
+    }
+
+    # Machine Type Validation
+    precondition {
+      condition = alltrue(concat(
+        [var.mgmt_node.machine_type],
+        [for node in var.transcoding_nodes : node.machine_type],
+        [for node in var.proxy_nodes : node.machine_type]
+      ))
+      error_message = "Invalid machine type specified"
+    }
+
+    # DNS and NTP Configuration
+    precondition {
+      condition = length(local.system_configs.dns_config.servers) > 0
+      error_message = "At least one DNS server must be configured"
     }
 
     precondition {
-      condition     = var.ssh_public_key != "" ? can(regex("^ssh-[^ ]+ [^ ]+ admin$", var.ssh_public_key)) : true
-      error_message = "If provided, SSH public key must be in OpenSSH format and include 'admin' username"
-    }
-
-    precondition {
-      condition     = alltrue([for machine_type, is_valid in local.supported_machine_types : is_valid])
-      error_message = "One or more machine types do not meet Pexip's requirements. Use N2, N2D, or C2 series."
+      condition = length(local.system_configs.ntp_config.servers) > 0
+      error_message = "At least one NTP server must be configured"
     }
   }
 }

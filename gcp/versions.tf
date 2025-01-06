@@ -37,5 +37,14 @@ terraform {
 
 provider "google" {
   project = var.project_id
-  region  = local.primary_region
+  region  = var.mgmt_node.region
+
+  default_labels = {
+    environment = var.environment
+    managed-by  = "terraform"
+    product     = "pexip-infinity"
+  }
 }
+
+provider "random" {}
+provider "null" {}
