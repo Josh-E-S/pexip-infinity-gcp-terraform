@@ -3,7 +3,7 @@
 # =============================================================================
 resource "google_storage_bucket" "pexip_images" {
   name                        = "${var.project_id}-pexip-images"
-  location                    = var.regions[keys(var.regions)[0]]  # Use first region
+  location                    = var.regions[keys(var.regions)[0]] # Use first region
   force_destroy               = true
   uniform_bucket_level_access = true
 

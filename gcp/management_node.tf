@@ -40,16 +40,16 @@ resource "google_compute_instance" "management_node" {
     {
       ssh-keys = local.ssh_public_key
       management_node_config = jsonencode({
-        hostname         = var.mgmt_node.hostname
-        domain           = var.mgmt_node.domain
-        ip               = google_compute_address.mgmt_internal_ip.address
-        mask             = cidrnetmask(var.mgmt_node.subnet_cidr)
-        gw               = var.mgmt_node.gateway_ip
-        dns              = join(",", local.system_configs.dns_config.servers)
-        ntp              = join(",", local.system_configs.ntp_config.servers)
-        user             = var.mgmt_node.admin_username
-        pass             = var.mgmt_node.admin_password_hash
-        os_pass          = var.mgmt_node.os_password_hash
+        hostname = var.mgmt_node.hostname
+        domain   = var.mgmt_node.domain
+        ip       = google_compute_address.mgmt_internal_ip.address
+        mask     = cidrnetmask(var.mgmt_node.subnet_cidr)
+        gw       = var.mgmt_node.gateway_ip
+        dns      = join(",", local.system_configs.dns_config.servers)
+        ntp      = join(",", local.system_configs.ntp_config.servers)
+        user     = var.mgmt_node.admin_username
+        pass     = var.mgmt_node.admin_password_hash
+        os_pass  = var.mgmt_node.os_password_hash
       })
     }
   )

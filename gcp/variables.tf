@@ -52,17 +52,17 @@ variable "proxy_node_name" {
 variable "mgmt_node" {
   description = "Management node configuration"
   type = object({
-    zone         = string
-    region       = string
-    hostname     = string
-    domain       = string
-    gateway_ip   = string
-    subnet_cidr  = string
-    admin_username = string
+    zone                = string
+    region              = string
+    hostname            = string
+    domain              = string
+    gateway_ip          = string
+    subnet_cidr         = string
+    admin_username      = string
     admin_password_hash = string
-    os_password_hash = string
-    public_ip    = bool
-    static_ip    = optional(bool, true)
+    os_password_hash    = string
+    public_ip           = bool
+    static_ip           = optional(bool, true)
     allowed_cidrs = object({
       admin_ui = list(string)
       ssh      = list(string)
@@ -81,23 +81,23 @@ variable "mgmt_node" {
 variable "transcoding_node_pools" {
   description = "Transcoding node pool configurations. Machine type can vary between pools."
   type = map(object({
-    machine_type = string
-    disk_size    = number
-    disk_type    = optional(string, "pd-standard")
-    region       = string
+    machine_type   = string
+    disk_size      = number
+    disk_type      = optional(string, "pd-standard")
+    region         = string
     count_per_zone = number
-    public_ip    = bool
-    static_ip    = optional(bool, true)
+    public_ip      = bool
+    static_ip      = optional(bool, true)
   }))
 }
 
 variable "proxy_node_pools" {
   description = "Proxy node pool configurations. All pools use e2-standard-2."
   type = map(object({
-    region       = string
+    region         = string
     count_per_zone = number
-    public_ip    = bool
-    static_ip    = optional(bool, true)
+    public_ip      = bool
+    static_ip      = optional(bool, true)
   }))
 }
 
@@ -108,10 +108,10 @@ variable "mgmt_services" {
   description = "Management node service configuration"
   type = object({
     enable_services = object({
-      admin_ui     = bool
-      directory    = bool
-      smtp         = bool
-      syslog       = bool
+      admin_ui  = bool
+      directory = bool
+      smtp      = bool
+      syslog    = bool
     })
     ports = object({
       admin_ui = object({
@@ -131,10 +131,10 @@ variable "mgmt_services" {
   })
   default = {
     enable_services = {
-      admin_ui     = true
-      directory    = true
-      smtp         = true
-      syslog       = true
+      admin_ui  = true
+      directory = true
+      smtp      = true
+      syslog    = true
     }
     ports = {
       admin_ui = {
@@ -178,15 +178,15 @@ variable "transcoding_services" {
         })
       })
       signaling = object({
-        sip_tcp = list(string)
-        sip_udp = list(string)
+        sip_tcp  = list(string)
+        sip_udp  = list(string)
         h323_tcp = list(string)
         h323_udp = list(string)
-        webrtc = list(string)
+        webrtc   = list(string)
       })
       services = object({
         one_touch_join = list(string)
-        event_sink = list(string)
+        event_sink     = list(string)
       })
     })
   })
@@ -212,15 +212,15 @@ variable "transcoding_services" {
         }
       }
       signaling = {
-        sip_tcp = ["5060", "5061"]
-        sip_udp = ["5060"]
+        sip_tcp  = ["5060", "5061"]
+        sip_udp  = ["5060"]
         h323_tcp = ["1720"]
         h323_udp = ["1719"]
-        webrtc = ["443"]
+        webrtc   = ["443"]
       }
       services = {
         one_touch_join = ["443"]
-        event_sink = ["443"]
+        event_sink     = ["443"]
       }
     }
   }
@@ -244,11 +244,11 @@ variable "proxy_services" {
         })
       })
       signaling = object({
-        sip_tcp = list(string)
-        sip_udp = list(string)
+        sip_tcp  = list(string)
+        sip_udp  = list(string)
         h323_tcp = list(string)
         h323_udp = list(string)
-        webrtc = list(string)
+        webrtc   = list(string)
       })
     })
   })
@@ -268,11 +268,11 @@ variable "proxy_services" {
         }
       }
       signaling = {
-        sip_tcp = ["5060", "5061"]
-        sip_udp = ["5060"]
+        sip_tcp  = ["5060", "5061"]
+        sip_udp  = ["5060"]
         h323_tcp = ["1720"]
         h323_udp = ["1719"]
-        webrtc = ["443"]
+        webrtc   = ["443"]
       }
     }
   }
@@ -290,11 +290,11 @@ variable "pexip_images" {
   description = "Paths to Pexip Infinity image files"
   type = object({
     management = object({
-      source_file = string  # Path to the downloaded management node image
+      source_file = string           # Path to the downloaded management node image
       name        = optional(string) # Optional custom name for the image
     })
     conferencing = object({
-      source_file = string  # Path to the downloaded conferencing node image
+      source_file = string           # Path to the downloaded conferencing node image
       name        = optional(string) # Optional custom name for the image
     })
   })

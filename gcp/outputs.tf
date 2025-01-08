@@ -10,7 +10,7 @@ output "infrastructure_info" {
       regions = {
         for region, config in var.regions : region => {
           subnet_name = config.subnet_name
-          zones      = config.zones
+          zones       = config.zones
         }
       }
     }
@@ -31,7 +31,7 @@ output "infrastructure_info" {
     machine_types = {
       management  = var.mgmt_node.machine_type
       transcoding = distinct([for name, node in local.transcoding_nodes : node.machine_type])
-      proxy       = "n1-standard-2"  # Default machine type for proxy nodes
+      proxy       = "n1-standard-2" # Default machine type for proxy nodes
     }
   }
 }
