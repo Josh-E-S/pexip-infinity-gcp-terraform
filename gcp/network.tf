@@ -6,16 +6,6 @@ data "google_compute_network" "network" {
 }
 
 # =============================================================================
-# Subnets
-# =============================================================================
-data "google_compute_subnetwork" "subnets" {
-  for_each = var.regions
-
-  name   = each.value.subnet_name
-  region = each.key
-}
-
-# =============================================================================
 # Management Node Firewall Rules
 # =============================================================================
 resource "google_compute_firewall" "mgmt_admin" {
