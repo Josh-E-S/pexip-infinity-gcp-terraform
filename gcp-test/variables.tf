@@ -9,32 +9,8 @@ variable "project_id" {
 # =============================================================================
 # Network Variables
 # =============================================================================
-variable "use_existing_network" {
-  description = "Whether to use an existing VPC network"
-  type        = bool
-  default     = false
-}
-
-variable "existing_network_name" {
-  description = "Name of existing VPC network to use (if use_existing_network = true)"
-  type        = string
-  default     = null
-}
-
-variable "use_existing_subnets" {
-  description = "Whether to use existing subnets"
-  type        = bool
-  default     = false
-}
-
-variable "existing_subnet_names" {
-  description = "Map of region to existing subnet names (if use_existing_subnets = true)"
-  type        = map(string)
-  default     = {}
-}
-
 variable "network_name" {
-  description = "Name of the VPC network (if creating new)"
+  description = "Name of the VPC network"
   type        = string
 }
 
