@@ -1,196 +1,188 @@
-# =============================================================================
 # Project Configuration
-# =============================================================================
 project_id = "your-project-id"
 
-# =============================================================================
-# Region and Zone Configuration
-# Define all regions and zones where you plan to deploy Pexip components
-# This serves as the source of truth for both networking and node deployment
-# =============================================================================
-deployment_regions = [
-  "us-central1",  # Primary region (first region is always primary)
-  "us-west1",     # Secondary region
-  "us-east1"      # Secondary region
-]
-
-# Define available zones for each region
-# These will be used by default for node deployment unless overridden
-region_zones = {
-  us-central1 = ["us-central1-a", "us-central1-b"]  # Primary region zones
-  us-west1    = ["us-west1-a"]                      # Secondary region zones
-  us-east1    = ["us-east1-b"]                      # Secondary region zones
-}
-
-# =============================================================================
 # Network Configuration
-# Configure VPC and subnet settings for your Pexip deployment
-# =============================================================================
-network_name         = "pexip-network"
-network_routing_mode = "REGIONAL"  # REGIONAL or GLOBAL
+network_name = "your-existing-network"
 
-# Subnet Configuration
-# Option 1: Auto-generate subnets (recommended for large deployments)
-auto_generate_subnets = true                # Set to false to use manual_subnet_cidrs
-network_cidr_base    = "10.0.0.0/16"       # Base CIDR for auto-generation
-network_subnet_size  = 24                  # Size of each subnet (/24)
-network_subnet_start = 0                   # Start numbering from 10.0.0.0
-
-# Option 2: Manual subnet configuration (used if auto_generate_subnets = false)
-manual_subnet_cidrs = {
-  us-central1 = "10.0.0.0/24"   # Primary region subnet
-  us-west1    = "10.0.1.0/24"   # Secondary region subnet
-  us-east1    = "10.0.2.0/24"   # Secondary region subnet
+# Region Configuration
+regions = {
+  "us-central1" = {
+    subnet_name = "your-existing-subnet"
+    zones       = ["us-central1-a", "us-central1-b", "us-central1-c"]
+  }
+  # Add more regions as needed:
+  # "europe-west1" = {
+  #   subnet_name = "your-europe-subnet"
+  #   zones       = ["europe-west1-b", "europe-west1-c", "europe-west1-d"]
+  # }
 }
 
-# =============================================================================
+# Node Naming
+mgmt_node_name = "pexip-mgmt"
+transcoding_node_name = "pexip-transcoding"
+proxy_node_name = "pexip-proxy"
+
+# Pexip Image Configuration
+pexip_version = "30.1"  # Replace with your Pexip version
+
+pexip_images = {
+  management = {
+    source_file = "/path/to/pexip-infinity-30-1-mgmt.tar.gz"  # Replace with your management node image path
+    name        = null  # Optional: Set to override default image name
+  }
+  conferencing = {
+    source_file = "/path/to/pexip-infinity-30-1-conf.tar.gz"  # Replace with your conferencing node image path
+    name        = null  # Optional: Set to override default image name
+  }
+}
+
 # Management Node Configuration
-# Configure the single management node for your deployment
-# =============================================================================
 mgmt_node = {
-  name         = "pexip-mgmt"
+  zone         = "us-central1-a"
+  region       = "us-central1"
   hostname     = "mgmt"
   domain       = "example.com"
-  gateway      = "10.0.0.1"
-  region       = "us-central1"        # Should be in primary region
-  zone         = "us-central1-a"
-  machine_type = "n2-highcpu-4"
-  disk_size    = 100
-  disk_type    = "pd-ssd"
-  public_ip    = true                # Enable public IP for management node
-
-  # Management Node Security
-  # Ports: TCP 80 (HTTP redirect), 443 (HTTPS/API), 22 (SSH)
+  admin_username = "admin"
+  admin_password_hash = "pbkdf2_sha256$..."  # Replace with actual hash
+  os_password_hash   = "sha512$..."          # Replace with actual hash
+  public_ip    = true
+  static_ip    = true
   allowed_cidrs = {
-    admin_ui = ["0.0.0.0/0"]  # Restrict admin UI/API access (TCP 80/443)
-    ssh      = ["0.0.0.0/0"]  # Restrict SSH access (TCP 22)
+    admin_ui = ["10.0.0.0/8"]  # Restrict admin UI access
+    ssh      = ["10.0.0.0/8"]  # Restrict SSH access
   }
-
-  # Optional Services Security
-  # Ports: TCP 389/636 (LDAP), 3268/3269 (AD), 587 (SMTP), UDP 514 (Syslog)
   service_cidrs = {
-    directory = []  # LDAP/AD access
-    smtp      = []  # Email notifications
-    syslog    = []  # Syslog servers
+    directory = ["10.0.0.0/8"]
+    smtp      = ["10.0.0.0/8"]
+    syslog    = ["10.0.0.0/8"]
   }
 }
 
-# =============================================================================
-# Conference Node Configuration
-# =============================================================================
-
-# Common Conference Node Settings
-conference_node_defaults = {
-  disk_type = "pd-ssd"
-
-  # Core Services Security (common for both transcoding and proxy)
-  # Ports: TCP/UDP 40000-49999 (Media), UDP 500/ESP(IPsec)
-  core_service_cidrs = {
-    media     = ["0.0.0.0/0"]  # RTP/RTCP/RDP/VbSS/DTLS/STUN/TURN
-    internal  = []              # Inter-node communication (IPsec)
-  }
-}
-
-# -----------------------------------------------------------------------------
-# Transcoding Node Configuration
-# -----------------------------------------------------------------------------
-transcoding_nodes = {
-  "us-central1-high" = {
-    count        = 10
-    machine_type = "n2-highcpu-8"
+# Transcoding Node Pools Configuration
+transcoding_node_pools = {
+  "pool1" = {
+    machine_type = "e2-standard-8"
     disk_size    = 50
+    disk_type    = "pd-standard"
     region       = "us-central1"
-    zones        = ["us-central1-a", "us-central1-b"]
-    public_ip    = false
-
-    # Protocol Configuration
-    enable_protocols = {
-      sip    = true     # TCP 5060-5061 - SIP signaling
-      h323   = true     # TCP 1720, UDP 1719 - H.323 signaling
-      webrtc = true     # TCP 443 - WebRTC/HTTPS
-      teams  = true     # TCP 443, 4477 - Teams signaling
-      gmeet  = false    # TCP 443 - Google Meet
-    }
-
-    # Service Configuration (per node group)
-    enable_services = {
-      one_touch_join = true  # TCP 443 - Calendar/Room integration
-      event_sink    = true   # TCP 80/443 - Event notifications
-      epic          = false  # TCP 443 - Epic telehealth
-      captions      = false  # TCP 443 - AI transcription
-    }
-  }
-  "us-west1-edge" = {
-    count        = 5
-    machine_type = "n2-highcpu-4"
-    disk_size    = 50
-    region       = "us-west1"
-    zones        = ["us-west1-a"]
+    count_per_zone = 2
     public_ip    = true
-
-    enable_protocols = {
-      sip    = true
-      h323   = true
-      webrtc = true
-      teams  = false
-      gmeet  = false
-    }
+    static_ip    = true
   }
+  # Example of another pool with different machine type in different region
+  # "pool2" = {
+  #   machine_type = "e2-standard-16"
+  #   disk_size    = 50
+  #   disk_type    = "pd-standard"
+  #   region       = "europe-west1"
+  #   count_per_zone = 2
+  #   public_ip    = true
+  #   static_ip    = true
+  # }
 }
 
-# -----------------------------------------------------------------------------
-# Proxy Node Configuration (Edge nodes for external connectivity)
-# -----------------------------------------------------------------------------
-proxy_nodes = {
-  "us-central1-main" = {
-    count        = 3
-    machine_type = "n2-highcpu-4"
-    disk_size    = 50
+# Proxy Node Pools Configuration
+proxy_node_pools = {
+  "pool1" = {
     region       = "us-central1"
-    zones        = ["us-central1-a"]
+    count_per_zone = 1
     public_ip    = true
+    static_ip    = true
+  }
+  # Example of another proxy pool in different region
+  # "pool2" = {
+  #   region       = "europe-west1"
+  #   count_per_zone = 1
+  #   public_ip    = true
+  #   static_ip    = true
+  # }
+}
 
-    # Protocol Configuration (typically all enabled for edge nodes)
-    enable_protocols = {
-      sip    = true     # TCP 5060-5061 - SIP signaling
-      h323   = true     # TCP 1720, UDP 1719 - H.323 signaling
-      webrtc = true     # TCP 443 - WebRTC/HTTPS
-      teams  = true     # TCP 443, 4477 - Teams signaling
-      gmeet  = true     # TCP 443 - Google Meet
+# Service Configuration
+mgmt_services = {
+  enable_services = {
+    admin_ui     = true
+    directory    = true
+    smtp         = true
+    syslog       = true
+  }
+  ports = {
+    admin_ui = {
+      tcp = ["443"]
     }
-
-    # Service Configuration
-    enable_services = {
-      turn          = true   # UDP 3478 - STUN/TURN
-      rtmp          = false  # TCP 1935 - Streaming
+    directory = {
+      tcp = ["389", "636"]
+    }
+    smtp = {
+      tcp = ["25", "587"]
+    }
+    syslog = {
+      tcp = ["514"]
+      udp = ["514"]
     }
   }
 }
 
-# =============================================================================
+transcoding_services = {
+  enable_protocols = {
+    sip    = true
+    h323   = true
+    webrtc = true
+    teams  = true
+    gmeet  = true
+  }
+  enable_services = {
+    one_touch_join = false
+    event_sink     = false
+    epic           = false
+    captions       = false
+  }
+  ports = {
+    media = {
+      udp_range = {
+        start = 40000
+        end   = 49999
+      }
+    }
+    signaling = {
+      sip_tcp = ["5060", "5061"]
+      sip_udp = ["5060"]
+      h323_tcp = ["1720"]
+      h323_udp = ["1719"]
+      webrtc = ["443"]
+    }
+    services = {
+      one_touch_join = ["443"]
+      event_sink = ["443"]
+    }
+  }
+}
+
+proxy_services = {
+  enable_protocols = {
+    sip    = true
+    h323   = true
+    webrtc = true
+    teams  = true
+    gmeet  = true
+  }
+  ports = {
+    media = {
+      udp_range = {
+        start = 50000
+        end   = 54999
+      }
+    }
+    signaling = {
+      sip_tcp = ["5060", "5061"]
+      sip_udp = ["5060"]
+      h323_tcp = ["1720"]
+      h323_udp = ["1719"]
+      webrtc = ["443"]
+    }
+  }
+}
+
 # System Configuration
-# =============================================================================
-
-# DNS and NTP Configuration
-# Ports: UDP 53 (DNS), 123 (NTP)
-system_service_cidrs = {
-  dns = ["8.8.8.8/32", "8.8.4.4/32"]  # DNS servers
-  ntp = ["0.0.0.0/0"]                  # NTP servers
-}
-
 dns_servers = ["8.8.8.8", "8.8.4.4"]
-ntp_servers = ["pool.ntp.org"]
-
-# Authentication Configuration
-mgmt_node_admin_password_hash = "pbkdf2_sha256$260000$example_hash"  # Replace with actual hash
-mgmt_node_os_password_hash    = "$6$example_hash"                    # Replace with actual hash
-
-# Optional: SSH Configuration
-# ssh_public_key = "ssh-rsa AAAA... admin"  # If not provided, one will be generated
-
-# =============================================================================
-# Pexip Software Configuration
-# =============================================================================
-pexip_version           = "30"                              # Pexip Infinity version
-pexip_mgr_image_source  = "/path/to/management-node.tar.gz" # Local path to management node image
-pexip_conf_image_source = "/path/to/conference-node.tar.gz" # Local path to conference node image
+ntp_servers = ["time.google.com"]

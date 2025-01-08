@@ -2,13 +2,17 @@
 # Validation Results
 # =============================================================================
 
-output "validation_results" {
-  description = "Results of infrastructure validation checks"
+output "infrastructure_info" {
+  description = "Infrastructure deployment information"
   value = {
     network = {
-      subnet_generation = var.auto_generate_subnets ? "auto" : "manual"
-      subnet_regions    = keys(local.subnet_configs)
-      cidrs             = [for subnet in local.subnet_configs : subnet.cidr]
+      name = var.network_name
+      regions = {
+        for region, config in var.regions : region => {
+          subnet_name = config.subnet_name
+          zones      = config.zones
+        }
+      }
     }
     nodes = {
       management = {
@@ -16,18 +20,18 @@ output "validation_results" {
         zone   = var.mgmt_node.zone
       }
       transcoding = {
-        count   = length(var.transcoding_nodes)
-        regions = distinct([for node in var.transcoding_nodes : node.region])
+        count   = length(local.transcoding_nodes)
+        regions = distinct([for name, node in local.transcoding_nodes : node.region])
       }
       proxy = {
-        count   = length(var.proxy_nodes)
-        regions = distinct([for node in var.proxy_nodes : node.region])
+        count   = length(local.proxy_nodes)
+        regions = distinct([for name, node in local.proxy_nodes : node.region])
       }
     }
     machine_types = {
       management  = var.mgmt_node.machine_type
-      transcoding = distinct([for node in var.transcoding_nodes : node.machine_type])
-      proxy       = distinct([for node in var.proxy_nodes : node.machine_type])
+      transcoding = distinct([for name, node in local.transcoding_nodes : node.machine_type])
+      proxy       = "n1-standard-2"  # Default machine type for proxy nodes
     }
   }
 }
@@ -57,9 +61,11 @@ output "transcoding_nodes" {
       external_ip  = try(instance.network_interface[0].access_config[0].nat_ip, null)
       machine_type = instance.machine_type
       zone         = instance.zone
-      region       = var.transcoding_nodes[name].region
-      protocols    = var.transcoding_nodes[name].enable_protocols
-      services     = var.transcoding_nodes[name].enable_services
+      region       = local.transcoding_nodes[name].region
+      disk_size    = local.transcoding_nodes[name].disk_size
+      disk_type    = local.transcoding_nodes[name].disk_type
+      public_ip    = local.transcoding_nodes[name].public_ip
+      static_ip    = local.transcoding_nodes[name].static_ip
     }
   }
 }
@@ -73,9 +79,9 @@ output "proxy_nodes" {
       external_ip  = try(instance.network_interface[0].access_config[0].nat_ip, null)
       machine_type = instance.machine_type
       zone         = instance.zone
-      region       = var.proxy_nodes[name].region
-      protocols    = var.proxy_nodes[name].enable_protocols
-      services     = var.proxy_nodes[name].enable_services
+      region       = local.proxy_nodes[name].region
+      public_ip    = local.proxy_nodes[name].public_ip
+      static_ip    = local.proxy_nodes[name].static_ip
     }
   }
 }
@@ -112,7 +118,6 @@ output "deployment_summary" {
   description = "Summary of the Pexip Infinity deployment"
   value = {
     project_id    = var.project_id
-    environment   = var.environment
     pexip_version = var.pexip_version
 
     nodes = {
@@ -121,12 +126,12 @@ output "deployment_summary" {
         public_access = var.mgmt_node.public_ip
       }
       transcoding = {
-        count   = length(var.transcoding_nodes)
-        regions = distinct([for node in var.transcoding_nodes : node.region])
+        count   = length(local.transcoding_nodes)
+        regions = distinct([for name, node in local.transcoding_nodes : node.region])
       }
       proxy = {
-        count   = length(var.proxy_nodes)
-        regions = distinct([for node in var.proxy_nodes : node.region])
+        count   = length(local.proxy_nodes)
+        regions = distinct([for name, node in local.proxy_nodes : node.region])
       }
     }
   }

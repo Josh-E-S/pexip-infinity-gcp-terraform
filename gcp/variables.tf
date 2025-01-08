@@ -9,126 +9,20 @@ variable "project_id" {
 # =============================================================================
 # Network Variables
 # =============================================================================
-variable "use_existing_network" {
-  description = "Whether to use an existing VPC network"
-  type        = bool
-  default     = false
-}
-
-variable "existing_network_name" {
-  description = "Name of existing VPC network to use (if use_existing_network = true)"
-  type        = string
-  default     = null
-}
-
-variable "use_existing_subnets" {
-  description = "Whether to use existing subnets"
-  type        = bool
-  default     = false
-}
-
-variable "existing_subnet_names" {
-  description = "Map of region to existing subnet names (if use_existing_subnets = true)"
-  type        = map(string)
-  default     = {}
-}
-
 variable "network_name" {
-  description = "Name of the VPC network (if creating new)"
+  description = "Name of the existing VPC network to use"
   type        = string
 }
 
-variable "network_routing_mode" {
-  description = "The network routing mode (REGIONAL or GLOBAL)"
-  type        = string
-  default     = "REGIONAL"
-  validation {
-    condition     = contains(["REGIONAL", "GLOBAL"], var.network_routing_mode)
-    error_message = "network_routing_mode must be either REGIONAL or GLOBAL."
-  }
-}
-
-variable "auto_generate_subnets" {
-  description = "Whether to auto-generate subnets based on CIDR configuration"
-  type        = bool
-  default     = true
-}
-
-variable "network_cidr_base" {
-  description = "Base CIDR for auto-generated subnets"
-  type        = string
-  default     = "10.0.0.0/16"
-}
-
-variable "network_subnet_size" {
-  description = "Subnet mask size for auto-generated subnets"
-  type        = number
-  default     = 24
-}
-
-variable "network_subnet_start" {
-  description = "Starting number for subnet generation"
-  type        = number
-  default     = 0
-}
-
-variable "manual_subnet_cidrs" {
-  description = "Manual subnet CIDR configurations (used if auto_generate_subnets = false)"
-  type        = map(string)
-  default     = {}
-}
-
 # =============================================================================
-# Management Node Variables
+# Region Configuration
 # =============================================================================
-variable "mgmt_node" {
-  description = "Management node configuration"
-  type = object({
-    name         = optional(string)
-    machine_type = string
-    disk_size    = number
-    disk_type    = optional(string, "pd-standard")
-    zone         = string
-    region       = string
-    public_ip    = bool
-
-    # Network Configuration
-    hostname    = string
-    domain      = string
-    gateway_ip  = string
-    subnet_cidr = string
-
-    # Authentication
-    admin_username      = string
-    admin_password_hash = string # PBKDF2 with HMAC-SHA256 (Django-style)
-    os_password_hash    = string # SHA-512
-
-    # Optional Services
-    enable_error_reporting = optional(bool, false)
-    enable_analytics       = optional(bool, false)
-    additional_tags        = optional(list(string), [])
-  })
-}
-
-# =============================================================================
-# Conference Node Common Variables
-# =============================================================================
-variable "conference_node_defaults" {
-  description = "Default settings for all conference nodes"
-  type = object({
-    disk_type = string
-    core_service_cidrs = object({
-      media    = list(string)
-      internal = list(string)
-    })
-  })
-  default = {
-    disk_type = "pd-ssd"
-    core_service_cidrs = {
-      media    = ["0.0.0.0/0"]
-      internal = []
-    }
-  }
+variable "regions" {
+  description = "Region configurations with subnet and zone information"
+  type = map(object({
+    subnet_name = string
+    zones       = list(string)
+  }))
 }
 
 # =============================================================================
@@ -141,31 +35,128 @@ variable "mgmt_node_name" {
 }
 
 variable "transcoding_node_name" {
-  description = "Base name for transcoding conference node instances"
+  description = "Base name for transcoding conference node instances. Will be used as prefix for all transcoding nodes."
   type        = string
   default     = "pexip-transcoding"
 }
 
 variable "proxy_node_name" {
-  description = "Base name for proxy conference node instances"
+  description = "Base name for proxy conference node instances. Will be used as prefix for all proxy nodes."
   type        = string
   default     = "pexip-proxy"
 }
 
 # =============================================================================
-# Transcoding Node Variables
+# Management Node Configuration
 # =============================================================================
-variable "transcoding_nodes" {
-  description = "Transcoding node configurations"
+variable "mgmt_node" {
+  description = "Management node configuration"
+  type = object({
+    zone         = string
+    region       = string
+    hostname     = string
+    domain       = string
+    gateway_ip   = string
+    subnet_cidr  = string
+    admin_username = string
+    admin_password_hash = string
+    os_password_hash = string
+    public_ip    = bool
+    static_ip    = optional(bool, true)
+    allowed_cidrs = object({
+      admin_ui = list(string)
+      ssh      = list(string)
+    })
+    service_cidrs = object({
+      directory = list(string)
+      smtp      = list(string)
+      syslog    = list(string)
+    })
+  })
+}
+
+# =============================================================================
+# Node Pool Variables
+# =============================================================================
+variable "transcoding_node_pools" {
+  description = "Transcoding node pool configurations. Machine type can vary between pools."
   type = map(object({
-    name         = optional(string) # Optional manual name override
     machine_type = string
     disk_size    = number
     disk_type    = optional(string, "pd-standard")
     region       = string
-    zone         = string
+    count_per_zone = number
     public_ip    = bool
+    static_ip    = optional(bool, true)
+  }))
+}
 
+variable "proxy_node_pools" {
+  description = "Proxy node pool configurations. All pools use e2-standard-2."
+  type = map(object({
+    region       = string
+    count_per_zone = number
+    public_ip    = bool
+    static_ip    = optional(bool, true)
+  }))
+}
+
+# =============================================================================
+# Service Configuration Per Node Type
+# =============================================================================
+variable "mgmt_services" {
+  description = "Management node service configuration"
+  type = object({
+    enable_services = object({
+      admin_ui     = bool
+      directory    = bool
+      smtp         = bool
+      syslog       = bool
+    })
+    ports = object({
+      admin_ui = object({
+        tcp = list(string)
+      })
+      directory = object({
+        tcp = list(string)
+      })
+      smtp = object({
+        tcp = list(string)
+      })
+      syslog = object({
+        tcp = list(string)
+        udp = list(string)
+      })
+    })
+  })
+  default = {
+    enable_services = {
+      admin_ui     = true
+      directory    = true
+      smtp         = true
+      syslog       = true
+    }
+    ports = {
+      admin_ui = {
+        tcp = ["443"]
+      }
+      directory = {
+        tcp = ["389", "636"]
+      }
+      smtp = {
+        tcp = ["25", "587"]
+      }
+      syslog = {
+        tcp = ["514"]
+        udp = ["514"]
+      }
+    }
+  }
+}
+
+variable "transcoding_services" {
+  description = "Transcoding nodes service configuration"
+  type = object({
     enable_protocols = object({
       sip    = bool
       h323   = bool
@@ -173,30 +164,71 @@ variable "transcoding_nodes" {
       teams  = bool
       gmeet  = bool
     })
-
     enable_services = object({
       one_touch_join = bool
       event_sink     = bool
       epic           = bool
       captions       = bool
     })
-  }))
+    ports = object({
+      media = object({
+        udp_range = object({
+          start = number
+          end   = number
+        })
+      })
+      signaling = object({
+        sip_tcp = list(string)
+        sip_udp = list(string)
+        h323_tcp = list(string)
+        h323_udp = list(string)
+        webrtc = list(string)
+      })
+      services = object({
+        one_touch_join = list(string)
+        event_sink = list(string)
+      })
+    })
+  })
+  default = {
+    enable_protocols = {
+      sip    = true
+      h323   = true
+      webrtc = true
+      teams  = true
+      gmeet  = true
+    }
+    enable_services = {
+      one_touch_join = false
+      event_sink     = false
+      epic           = false
+      captions       = false
+    }
+    ports = {
+      media = {
+        udp_range = {
+          start = 40000
+          end   = 49999
+        }
+      }
+      signaling = {
+        sip_tcp = ["5060", "5061"]
+        sip_udp = ["5060"]
+        h323_tcp = ["1720"]
+        h323_udp = ["1719"]
+        webrtc = ["443"]
+      }
+      services = {
+        one_touch_join = ["443"]
+        event_sink = ["443"]
+      }
+    }
+  }
 }
 
-# =============================================================================
-# Proxy Node Variables
-# =============================================================================
-variable "proxy_nodes" {
-  description = "Proxy node configurations"
-  type = map(object({
-    name         = optional(string) # Optional manual name override
-    machine_type = string
-    disk_size    = number
-    disk_type    = optional(string, "pd-standard")
-    region       = string
-    zone         = string
-    public_ip    = bool
-
+variable "proxy_services" {
+  description = "Proxy nodes service configuration"
+  type = object({
     enable_protocols = object({
       sip    = bool
       h323   = bool
@@ -204,29 +236,73 @@ variable "proxy_nodes" {
       teams  = bool
       gmeet  = bool
     })
-
-    enable_services = object({
-      turn = bool
-      rtmp = bool
+    ports = object({
+      media = object({
+        udp_range = object({
+          start = number
+          end   = number
+        })
+      })
+      signaling = object({
+        sip_tcp = list(string)
+        sip_udp = list(string)
+        h323_tcp = list(string)
+        h323_udp = list(string)
+        webrtc = list(string)
+      })
     })
-  }))
-}
-
-# =============================================================================
-# System Variables
-# =============================================================================
-variable "system_service_cidrs" {
-  description = "CIDR ranges for system services"
-  type = object({
-    dns = list(string)
-    ntp = list(string)
   })
   default = {
-    dns = ["8.8.8.8/32", "8.8.4.4/32"]
-    ntp = ["0.0.0.0/0"]
+    enable_protocols = {
+      sip    = true
+      h323   = true
+      webrtc = true
+      teams  = true
+      gmeet  = true
+    }
+    ports = {
+      media = {
+        udp_range = {
+          start = 50000
+          end   = 54999
+        }
+      }
+      signaling = {
+        sip_tcp = ["5060", "5061"]
+        sip_udp = ["5060"]
+        h323_tcp = ["1720"]
+        h323_udp = ["1719"]
+        webrtc = ["443"]
+      }
+    }
   }
 }
 
+# =============================================================================
+# Pexip Image Variables
+# =============================================================================
+variable "pexip_version" {
+  description = "Version of Pexip Infinity to deploy"
+  type        = string
+}
+
+variable "pexip_images" {
+  description = "Paths to Pexip Infinity image files"
+  type = object({
+    management = object({
+      source_file = string  # Path to the downloaded management node image
+      name        = optional(string) # Optional custom name for the image
+    })
+    conferencing = object({
+      source_file = string  # Path to the downloaded conferencing node image
+      name        = optional(string) # Optional custom name for the image
+    })
+  })
+}
+
+# =============================================================================
+# System Configuration
+# =============================================================================
 variable "dns_servers" {
   description = "List of DNS servers"
   type        = list(string)
@@ -236,143 +312,5 @@ variable "dns_servers" {
 variable "ntp_servers" {
   description = "List of NTP servers"
   type        = list(string)
-  default     = ["pool.ntp.org"]
-}
-
-# =============================================================================
-# SSH Configuration
-# =============================================================================
-variable "ssh_key_path" {
-  description = "Path to the SSH public key file for instance access. If not provided, SSH key access will not be configured."
-  type        = string
-  default     = null
-}
-
-variable "ssh_public_key" {
-  description = "SSH public key for node access"
-  type        = string
-  default     = ""
-}
-
-# =============================================================================
-# Image Variables
-# =============================================================================
-variable "pexip_version" {
-  description = "Version of Pexip Infinity to deploy"
-  type        = string
-}
-
-variable "mgmt_node_image_path" {
-  description = "Local path to the Pexip Infinity Management Node image file"
-  type        = string
-}
-
-variable "conference_node_image_path" {
-  description = "Local path to the Pexip Infinity Conference Node image file"
-  type        = string
-}
-
-variable "storage_bucket_location" {
-  description = "Location for the GCS bucket storing Pexip images"
-  type        = string
-  default     = "US"
-}
-
-variable "environment" {
-  description = "Environment name for resource labeling and naming"
-  type        = string
-  default     = "prod"
-
-  validation {
-    condition     = can(regex("^[a-z0-9-]+$", var.environment))
-    error_message = "Environment name must contain only lowercase letters, numbers, and hyphens."
-  }
-}
-
-# =============================================================================
-# Port Configurations (for internal use)
-# =============================================================================
-variable "service_ports" {
-  description = "Port configurations for all services"
-  type = object({
-    core = object({
-      sip = object({
-        tcp = list(number)
-        udp = list(number)
-      })
-      h323 = object({
-        tcp = list(number)
-        udp = list(number)
-      })
-      webrtc = object({
-        tcp = list(number)
-      })
-      media = object({
-        udp_range = object({
-          start = number
-          end   = number
-        })
-      })
-    })
-    teams = object({
-      tcp = list(number)
-      udp_range = object({
-        start = number
-        end   = number
-      })
-    })
-    turn = object({
-      udp = list(number)
-    })
-    rtmp = object({
-      tcp = list(number)
-    })
-  })
-  default = {
-    core = {
-      sip = {
-        tcp = [5060, 5061]
-        udp = [5060, 5061]
-      }
-      h323 = {
-        tcp = [1720, 1719]
-        udp = [1719]
-      }
-      webrtc = {
-        tcp = [443]
-      }
-      media = {
-        udp_range = {
-          start = 40000
-          end   = 49999
-        }
-      }
-    }
-    teams = {
-      tcp = [443, 4477]
-      udp_range = {
-        start = 50000
-        end   = 54999
-      }
-    }
-    turn = {
-      udp = [3478]
-    }
-    rtmp = {
-      tcp = [1935]
-    }
-  }
-}
-
-# Authentication Variables
-variable "mgmt_node_admin_password_hash" {
-  description = "Password hash for management node admin user (PBKDF2 with HMAC-SHA256)"
-  type        = string
-  sensitive   = true
-}
-
-variable "mgmt_node_os_password_hash" {
-  description = "Password hash for management node OS user (SHA-512)"
-  type        = string
-  sensitive   = true
+  default     = ["time.google.com"]
 }

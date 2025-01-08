@@ -9,39 +9,15 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 4.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 }
 
-# =============================================================================
-# Local Variables
-# =============================================================================
-
-locals {
-  # System configuration defaults
-  system_configs = {
-    dns_config = {
-      servers = coalesce(var.dns_servers, ["8.8.8.8", "8.8.4.4"])
-    }
-    ntp_config = {
-      servers = coalesce(var.ntp_servers, ["time.google.com"])
-    }
-  }
-
-  # SSH key configuration
-  ssh_public_key = var.ssh_key_path != null ? "${var.mgmt_node.admin_username}:${file(var.ssh_key_path)}" : null
-
-  # Management node configuration defaults
-  mgmt_node_config = {
-    tags = concat(["pexip", "management"], try(var.mgmt_node.additional_tags, []))
-    metadata = merge(
-      {
-        startup-script = file("${path.module}/scripts/mgmt_node_startup.sh")
-      },
-      local.ssh_public_key != null ? {
-        ssh-keys = local.ssh_public_key
-      } : {}
-    )
-  }
+provider "google" {
+  project = var.project_id
 }
 
 # =============================================================================
@@ -55,8 +31,8 @@ resource "null_resource" "precondition_checks" {
       condition = (
         var.mgmt_node.admin_password_hash != "" &&
         var.mgmt_node.os_password_hash != "" &&
-        can(regex("^\\$pbkdf2-sha256\\$", var.mgmt_node.admin_password_hash)) &&
-        can(regex("^\\$6\\$rounds=", var.mgmt_node.os_password_hash))
+        can(regex("^pbkdf2-sha256\\$", var.mgmt_node.admin_password_hash)) &&
+        can(regex("^sha512\\$", var.mgmt_node.os_password_hash))
       )
       error_message = "Management node password hashes must be in correct format (PBKDF2-SHA256 for admin, SHA-512 for OS)"
     }
@@ -65,46 +41,57 @@ resource "null_resource" "precondition_checks" {
     precondition {
       condition = (
         can(regex("^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9]$", var.mgmt_node.hostname)) &&
-        can(regex("^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$", var.mgmt_node.domain)) &&
-        can(cidrhost(var.mgmt_node.subnet_cidr, 1))
+        can(regex("^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$", var.mgmt_node.domain))
       )
-      error_message = "Invalid management node network configuration"
+      error_message = "Invalid management node hostname or domain configuration"
     }
 
-    # Conference Node Configuration
+    # Region and Zone Configuration
     precondition {
       condition = alltrue([
-        for _, node in var.transcoding_nodes : contains(keys(local.subnet_configs), node.region)
+        for pool in var.transcoding_node_pools : contains(keys(var.regions), pool.region)
       ])
-      error_message = "All transcoding nodes must be in regions with defined subnets"
+      error_message = "All transcoding node pools must be in regions with defined configurations"
     }
 
     precondition {
       condition = alltrue([
-        for _, node in var.proxy_nodes : contains(keys(local.subnet_configs), node.region)
+        for pool in var.proxy_node_pools : contains(keys(var.regions), pool.region)
       ])
-      error_message = "All proxy nodes must be in regions with defined subnets"
+      error_message = "All proxy node pools must be in regions with defined configurations"
     }
 
-    # Machine Type Validation
+    # Management Node Region/Zone Check
     precondition {
-      condition = alltrue(concat(
-        [var.mgmt_node.machine_type],
-        [for node in var.transcoding_nodes : node.machine_type],
-        [for node in var.proxy_nodes : node.machine_type]
-      ))
-      error_message = "Invalid machine type specified"
+      condition = (
+        contains(keys(var.regions), var.mgmt_node.region) &&
+        contains(var.regions[var.mgmt_node.region].zones, var.mgmt_node.zone)
+      )
+      error_message = "Management node must be in a configured region and zone"
     }
 
-    # DNS and NTP Configuration
+    # Image Configuration Check
     precondition {
-      condition     = length(local.system_configs.dns_config.servers) > 0
-      error_message = "At least one DNS server must be configured"
+      condition = (
+        can(fileexists(var.pexip_images.management.source_file)) &&
+        can(fileexists(var.pexip_images.conferencing.source_file))
+      )
+      error_message = "Pexip image files must exist at the specified paths"
     }
 
+    # Service Configuration Checks
     precondition {
-      condition     = length(local.system_configs.ntp_config.servers) > 0
-      error_message = "At least one NTP server must be configured"
+      condition = (
+        var.transcoding_services.ports.media.udp_range.start < var.transcoding_services.ports.media.udp_range.end &&
+        var.proxy_services.ports.media.udp_range.start < var.proxy_services.ports.media.udp_range.end
+      )
+      error_message = "Media port ranges must be valid (start < end)"
+    }
+
+    # System Configuration
+    precondition {
+      condition     = length(var.dns_servers) > 0 && length(var.ntp_servers) > 0
+      error_message = "At least one DNS server and one NTP server must be configured"
     }
   }
 }

@@ -21,7 +21,7 @@ resource "google_compute_instance" "management_node" {
   }
 
   network_interface {
-    subnetwork = local.subnet_refs[var.mgmt_node.region].self_link
+    subnetwork = var.regions[var.mgmt_node.region].subnet_name
 
     # Static internal IP configuration
     network_ip = google_compute_address.mgmt_internal_ip.address
@@ -43,15 +43,13 @@ resource "google_compute_instance" "management_node" {
         hostname         = var.mgmt_node.hostname
         domain           = var.mgmt_node.domain
         ip               = google_compute_address.mgmt_internal_ip.address
-        mask             = cidrnetmask(local.subnet_refs[var.mgmt_node.region].ip_cidr_range)
+        mask             = cidrnetmask(var.mgmt_node.subnet_cidr)
         gw               = var.mgmt_node.gateway_ip
         dns              = join(",", local.system_configs.dns_config.servers)
         ntp              = join(",", local.system_configs.ntp_config.servers)
         user             = var.mgmt_node.admin_username
-        pass             = var.mgmt_node_admin_password_hash
-        admin_password   = var.mgmt_node_os_password_hash
-        error_reports    = var.mgmt_node.enable_error_reporting
-        enable_analytics = var.mgmt_node.enable_analytics
+        pass             = var.mgmt_node.admin_password_hash
+        os_pass          = var.mgmt_node.os_password_hash
       })
     }
   )
@@ -71,20 +69,19 @@ resource "google_compute_instance" "management_node" {
 # Management Node IP Addresses
 # =============================================================================
 
-# Static Internal IP
+# Static internal IP for management node
 resource "google_compute_address" "mgmt_internal_ip" {
-  name         = "${coalesce(try(var.mgmt_node.name, null), var.mgmt_node_name)}-internal-ip"
-  subnetwork   = google_compute_subnetwork.pexip_subnets[var.mgmt_node.region].id
+  name         = "${var.mgmt_node_name}-internal"
+  subnetwork   = var.regions[var.mgmt_node.region].subnet_name
   address_type = "INTERNAL"
   region       = var.mgmt_node.region
 }
 
-# Static External IP (if enabled)
+# Static external IP for management node (if enabled)
 resource "google_compute_address" "mgmt_external_ip" {
-  count = var.mgmt_node.public_ip ? 1 : 0
-
-  name         = "${coalesce(try(var.mgmt_node.name, null), var.mgmt_node_name)}-external-ip"
-  region       = var.mgmt_node.region
+  count        = var.mgmt_node.public_ip ? 1 : 0
+  name         = "${var.mgmt_node_name}-external"
   address_type = "EXTERNAL"
+  region       = var.mgmt_node.region
   network_tier = "PREMIUM"
 }

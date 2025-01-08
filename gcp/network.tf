@@ -1,216 +1,190 @@
 # =============================================================================
 # VPC Network
 # =============================================================================
-# Create new network if not using existing
-resource "google_compute_network" "pexip_network" {
-  count                   = var.use_existing_network ? 0 : 1
-  name                    = var.network_name
-  auto_create_subnetworks = false
-  routing_mode            = var.network_routing_mode
-}
-
-# Data source for existing network
-data "google_compute_network" "existing_network" {
-  count = var.use_existing_network ? 1 : 0
-  name  = var.existing_network_name
-}
-
-# Local for current network id and subnet references
-locals {
-  network_id   = var.use_existing_network ? data.google_compute_network.existing_network[0].id : google_compute_network.pexip_network[0].id
-  network_name = var.use_existing_network ? data.google_compute_network.existing_network[0].name : google_compute_network.pexip_network[0].name
-
-  # Subnet references for both new and existing subnets
-  subnet_refs = {
-    for region in distinct(concat(
-      keys(local.subnet_configs),
-      keys(var.existing_subnet_names)
-    )) :
-    region => {
-      self_link     = var.use_existing_subnets ? data.google_compute_subnetwork.existing_subnets[region].self_link : google_compute_subnetwork.pexip_subnets[region].self_link
-      ip_cidr_range = var.use_existing_subnets ? data.google_compute_subnetwork.existing_subnets[region].ip_cidr_range : google_compute_subnetwork.pexip_subnets[region].ip_cidr_range
-    }
-  }
+data "google_compute_network" "network" {
+  name = var.network_name
 }
 
 # =============================================================================
 # Subnets
 # =============================================================================
-# Create new subnets if not using existing
-resource "google_compute_subnetwork" "pexip_subnets" {
-  for_each = var.use_existing_subnets ? {} : local.subnet_configs
+data "google_compute_subnetwork" "subnets" {
+  for_each = var.regions
 
-  name          = "${var.network_name}-subnet-${each.key}"
-  ip_cidr_range = each.value.cidr
-  network       = local.network_id
-  region        = each.key
+  name   = each.value.subnet_name
+  region = each.key
 }
 
-# Data source for existing subnets
-data "google_compute_subnetwork" "existing_subnets" {
-  for_each = var.use_existing_subnets ? var.existing_subnet_names : {}
+locals {
+  network_id   = data.google_compute_network.network.id
+  network_name = data.google_compute_network.network.name
 
-  name   = each.value
-  region = each.key
+  # Subnet references
+  subnet_refs = {
+    for region, subnet in data.google_compute_subnetwork.subnets : region => {
+      self_link     = subnet.self_link
+      ip_cidr_range = subnet.ip_cidr_range
+    }
+  }
 }
 
 # =============================================================================
 # Management Node Firewall Rules
 # =============================================================================
-
-# Administrative Access (Web UI and SSH)
 resource "google_compute_firewall" "mgmt_admin" {
-  name          = local.mgmt_node_firewall_rules.admin.name
+  name          = "pexip-mgmt-admin"
   network       = local.network_name
-  description   = local.mgmt_node_firewall_rules.admin.description
-  direction     = local.mgmt_node_firewall_rules.admin.direction
-  source_ranges = local.mgmt_node_firewall_rules.admin.source_ranges
-  target_tags   = local.mgmt_node_firewall_rules.admin.target_tags
-
-  dynamic "allow" {
-    for_each = local.mgmt_node_firewall_rules.admin.allow
-    content {
-      protocol = allow.value.protocol
-      ports    = allow.value.ports
-    }
-  }
-}
-
-# Optional Services (LDAP, SMTP, Syslog)
-resource "google_compute_firewall" "mgmt_services" {
-  name          = local.mgmt_node_firewall_rules.services.name
-  network       = local.network_name
-  description   = local.mgmt_node_firewall_rules.services.description
-  direction     = local.mgmt_node_firewall_rules.services.direction
-  source_ranges = local.mgmt_node_firewall_rules.services.source_ranges
-  target_tags   = local.mgmt_node_firewall_rules.services.target_tags
-
-  dynamic "allow" {
-    for_each = local.mgmt_node_firewall_rules.services.allow
-    content {
-      protocol = allow.value.protocol
-      ports    = allow.value.ports
-    }
-  }
-}
-
-# =============================================================================
-# Conference Node Common Firewall Rules
-# =============================================================================
-
-# Media Traffic
-resource "google_compute_firewall" "conference_media" {
-  name          = local.conference_node_common_rules.media.name
-  network       = local.network_name
-  description   = local.conference_node_common_rules.media.description
-  direction     = local.conference_node_common_rules.media.direction
-  source_ranges = local.conference_node_common_rules.media.source_ranges
-  target_tags   = local.conference_node_common_rules.media.target_tags
-
-  dynamic "allow" {
-    for_each = local.conference_node_common_rules.media.allow
-    content {
-      protocol = allow.value.protocol
-      ports    = allow.value.ports
-    }
-  }
-}
-
-# Internal Communication
-resource "google_compute_firewall" "internal_communication" {
-  name          = local.conference_node_common_rules.internal.name
-  network       = local.network_name
-  description   = local.conference_node_common_rules.internal.description
-  direction     = local.conference_node_common_rules.internal.direction
-  source_ranges = local.conference_node_common_rules.internal.source_ranges
-  target_tags   = local.conference_node_common_rules.internal.target_tags
-
-  dynamic "allow" {
-    for_each = local.conference_node_common_rules.internal.allow
-    content {
-      protocol = allow.value.protocol
-      ports    = allow.value.ports
-    }
-  }
-}
-
-# =============================================================================
-# Protocol-Specific Firewall Rules
-# =============================================================================
-
-# Create firewall rules for each protocol
-resource "google_compute_firewall" "protocol_rules" {
-  for_each = {
-    for protocol, rule in local.protocol_firewall_rules :
-    protocol => rule
-  }
-
-  name          = each.value.name
-  network       = local.network_name
-  description   = each.value.description
+  description   = "Management node administrative access (Web UI and SSH)"
   direction     = "INGRESS"
-  source_ranges = var.conference_node_defaults.core_service_cidrs.media
-  target_tags   = each.value.target_tags
-
-  dynamic "allow" {
-    for_each = each.value.allow
-    content {
-      protocol = allow.value.protocol
-      ports    = allow.value.ports
-    }
-  }
-}
-
-# =============================================================================
-# Service-Specific Firewall Rules
-# =============================================================================
-
-# Create firewall rules for each service
-resource "google_compute_firewall" "service_rules" {
-  for_each = {
-    for service, rule in local.service_firewall_rules :
-    service => rule
-  }
-
-  name          = each.value.name
-  network       = local.network_name
-  description   = each.value.description
-  direction     = "INGRESS"
-  source_ranges = var.conference_node_defaults.core_service_cidrs.media
-  target_tags   = each.value.target_tags
-
-  dynamic "allow" {
-    for_each = each.value.allow
-    content {
-      protocol = allow.value.protocol
-      ports    = allow.value.ports
-    }
-  }
-}
-
-# =============================================================================
-# System Service Firewall Rules
-# =============================================================================
-
-# DNS and NTP access
-resource "google_compute_firewall" "system_services" {
-  name        = "pexip-system-services"
-  network     = local.network_name
-  description = "System services (DNS and NTP)"
-  direction   = "EGRESS"
-  destination_ranges = distinct(concat(
-    local.system_configs.dns_config.cidrs,
-    local.system_configs.ntp_config.cidrs
-  ))
-  target_tags = ["pexip"]
+  source_ranges = concat(var.mgmt_node.allowed_cidrs.admin_ui, var.mgmt_node.allowed_cidrs.ssh)
+  target_tags   = ["${var.mgmt_node_name}"]
 
   allow {
-    protocol = "udp"
-    ports    = ["53", "123"] # DNS and NTP ports
+    protocol = "tcp"
+    ports    = var.mgmt_services.ports.admin_ui.tcp
   }
 
   allow {
     protocol = "tcp"
-    ports    = ["53"] # DNS over TCP
+    ports    = ["22"]  # SSH
+  }
+}
+
+resource "google_compute_firewall" "mgmt_services" {
+  name          = "pexip-mgmt-services"
+  network       = local.network_name
+  description   = "Management node services (LDAP, SMTP, Syslog)"
+  direction     = "INGRESS"
+  source_ranges = distinct(concat(
+    var.mgmt_node.service_cidrs.directory,
+    var.mgmt_node.service_cidrs.smtp,
+    var.mgmt_node.service_cidrs.syslog
+  ))
+  target_tags = ["${var.mgmt_node_name}"]
+
+  dynamic "allow" {
+    for_each = {
+      directory = var.mgmt_services.ports.directory.tcp
+      smtp      = var.mgmt_services.ports.smtp.tcp
+      syslog    = var.mgmt_services.ports.syslog.tcp
+    }
+    content {
+      protocol = "tcp"
+      ports    = allow.value
+    }
+  }
+
+  dynamic "allow" {
+    for_each = {
+      syslog = var.mgmt_services.ports.syslog.udp
+    }
+    content {
+      protocol = "udp"
+      ports    = allow.value
+    }
+  }
+}
+
+# =============================================================================
+# Conferencing Node Firewall Rules
+# =============================================================================
+
+# Media Traffic for Transcoding Nodes
+resource "google_compute_firewall" "transcoding_media" {
+  name          = "pexip-transcoding-media"
+  network       = local.network_name
+  description   = "Transcoding node media traffic"
+  direction     = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]  # Media traffic needs to be accessible from anywhere
+  target_tags   = ["${var.transcoding_node_name}"]
+
+  allow {
+    protocol = "udp"
+    ports    = ["${var.transcoding_services.ports.media.udp_range.start}-${var.transcoding_services.ports.media.udp_range.end}"]
+  }
+}
+
+# Media Traffic for Proxy Nodes
+resource "google_compute_firewall" "proxy_media" {
+  name          = "pexip-proxy-media"
+  network       = local.network_name
+  description   = "Proxy node media traffic"
+  direction     = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]  # Media traffic needs to be accessible from anywhere
+  target_tags   = ["${var.proxy_node_name}"]
+
+  allow {
+    protocol = "udp"
+    ports    = ["${var.proxy_services.ports.media.udp_range.start}-${var.proxy_services.ports.media.udp_range.end}"]
+  }
+}
+
+# Signaling Traffic for All Conference Nodes
+resource "google_compute_firewall" "signaling" {
+  name          = "pexip-signaling"
+  network       = local.network_name
+  description   = "Conference node signaling traffic"
+  direction     = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["${var.transcoding_node_name}", "${var.proxy_node_name}"]
+
+  dynamic "allow" {
+    for_each = {
+      sip_tcp    = var.transcoding_services.ports.signaling.sip_tcp
+      h323_tcp   = var.transcoding_services.ports.signaling.h323_tcp
+      webrtc     = var.transcoding_services.ports.signaling.webrtc
+    }
+    content {
+      protocol = "tcp"
+      ports    = allow.value
+    }
+  }
+
+  dynamic "allow" {
+    for_each = {
+      sip_udp    = var.transcoding_services.ports.signaling.sip_udp
+      h323_udp   = var.transcoding_services.ports.signaling.h323_udp
+    }
+    content {
+      protocol = "udp"
+      ports    = allow.value
+    }
+  }
+}
+
+# Internal Communication between Nodes
+resource "google_compute_firewall" "internal" {
+  name          = "pexip-internal"
+  network       = local.network_name
+  description   = "Internal communication between Pexip nodes"
+  direction     = "INGRESS"
+  source_tags   = ["${var.mgmt_node_name}", "${var.transcoding_node_name}", "${var.proxy_node_name}"]
+  target_tags   = ["${var.mgmt_node_name}", "${var.transcoding_node_name}", "${var.proxy_node_name}"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["443", "8443"]  # Internal API and configuration
+  }
+}
+
+# Optional Services for Transcoding Nodes
+resource "google_compute_firewall" "transcoding_services" {
+  count         = var.transcoding_services.enable_services.one_touch_join || var.transcoding_services.enable_services.event_sink ? 1 : 0
+  name          = "pexip-transcoding-services"
+  network       = local.network_name
+  description   = "Optional services for transcoding nodes"
+  direction     = "INGRESS"
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["${var.transcoding_node_name}"]
+
+  dynamic "allow" {
+    for_each = {
+      one_touch_join = var.transcoding_services.enable_services.one_touch_join ? var.transcoding_services.ports.services.one_touch_join : []
+      event_sink     = var.transcoding_services.enable_services.event_sink ? var.transcoding_services.ports.services.event_sink : []
+    }
+    content {
+      protocol = "tcp"
+      ports    = allow.value
+    }
   }
 }

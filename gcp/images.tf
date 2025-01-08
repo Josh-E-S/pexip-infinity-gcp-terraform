@@ -1,29 +1,33 @@
 # =============================================================================
 # Storage Bucket for Pexip Images
 # =============================================================================
-
 resource "google_storage_bucket" "pexip_images" {
-  name                        = "${var.project_id}-pexip-images-${var.environment}"
-  location                    = var.storage_bucket_location
+  name                        = "${var.project_id}-pexip-images"
+  location                    = var.regions[keys(var.regions)[0]]  # Use first region
   force_destroy               = true
   uniform_bucket_level_access = true
 
   labels = {
-    environment = var.environment
-    managed-by  = "terraform"
-    component   = "images"
-    product     = "pexip-infinity"
+    managed-by = "terraform"
+    component  = "images"
+    product    = "pexip-infinity"
   }
 }
 
 # =============================================================================
 # Management Node Image
 # =============================================================================
+locals {
+  mgmt_image_name = coalesce(
+    var.pexip_images.management.name,
+    "pexip-infinity-mgmt-${var.pexip_version}"
+  )
+}
 
 # Upload Management Node image to Cloud Storage
 resource "google_storage_bucket_object" "mgmt_image" {
   name   = "pexip-infinity-mgmt-${var.pexip_version}.tar.gz"
-  source = var.mgmt_node_image_path
+  source = var.pexip_images.management.source_file
   bucket = google_storage_bucket.pexip_images.name
 
   depends_on = [google_storage_bucket.pexip_images]
@@ -31,18 +35,17 @@ resource "google_storage_bucket_object" "mgmt_image" {
 
 # Create Management Node custom image
 resource "google_compute_image" "mgmt_image" {
-  name = "pexip-infinity-mgmt-${var.pexip_version}"
+  name = local.mgmt_image_name
 
   raw_disk {
     source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.mgmt_image.name}"
   }
 
   labels = {
-    environment = var.environment
-    managed-by  = "terraform"
-    component   = "management"
-    product     = "pexip-infinity"
-    version     = replace(var.pexip_version, ".", "-")
+    managed-by = "terraform"
+    component  = "management"
+    product    = "pexip-infinity"
+    version    = replace(var.pexip_version, ".", "-")
   }
 
   timeouts {
@@ -53,13 +56,19 @@ resource "google_compute_image" "mgmt_image" {
 }
 
 # =============================================================================
-# Conference Node Images
+# Conference Node Image
 # =============================================================================
+locals {
+  conference_image_name = coalesce(
+    var.pexip_images.conferencing.name,
+    "pexip-infinity-conference-${var.pexip_version}"
+  )
+}
 
 # Upload Conference Node image to Cloud Storage
 resource "google_storage_bucket_object" "conference_image" {
   name   = "pexip-infinity-conference-${var.pexip_version}.tar.gz"
-  source = var.conference_node_image_path
+  source = var.pexip_images.conferencing.source_file
   bucket = google_storage_bucket.pexip_images.name
 
   depends_on = [google_storage_bucket.pexip_images]
@@ -67,18 +76,17 @@ resource "google_storage_bucket_object" "conference_image" {
 
 # Create Conference Node custom image
 resource "google_compute_image" "conference_image" {
-  name = "pexip-infinity-conference-${var.pexip_version}"
+  name = local.conference_image_name
 
   raw_disk {
     source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.conference_image.name}"
   }
 
   labels = {
-    environment = var.environment
-    managed-by  = "terraform"
-    component   = "conference"
-    product     = "pexip-infinity"
-    version     = replace(var.pexip_version, ".", "-")
+    managed-by = "terraform"
+    component  = "conference"
+    product    = "pexip-infinity"
+    version    = replace(var.pexip_version, ".", "-")
   }
 
   timeouts {
@@ -86,16 +94,4 @@ resource "google_compute_image" "conference_image" {
   }
 
   depends_on = [google_storage_bucket_object.conference_image]
-}
-
-# Null resource to check image creation completion
-resource "null_resource" "image_creation_check" {
-  depends_on = [
-    google_compute_image.mgmt_image,
-    google_compute_image.conference_image
-  ]
-
-  provisioner "local-exec" {
-    command = "echo 'Pexip images creation completed. Management Node and Conference Node images are ready for use.'"
-  }
 }

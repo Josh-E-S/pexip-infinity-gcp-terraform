@@ -25,7 +25,7 @@ resource "google_compute_instance" "transcoding_nodes" {
   }
 
   network_interface {
-    subnetwork = google_compute_subnetwork.pexip_subnets[each.value.region].self_link
+    subnetwork = local.subnet_refs[each.value.region].self_link
 
     # Configure public IP if enabled
     dynamic "access_config" {
@@ -94,7 +94,7 @@ resource "google_compute_instance" "proxy_nodes" {
   }
 
   network_interface {
-    subnetwork = google_compute_subnetwork.pexip_subnets[each.value.region].self_link
+    subnetwork = local.subnet_refs[each.value.region].self_link
 
     # Configure public IP if enabled
     dynamic "access_config" {

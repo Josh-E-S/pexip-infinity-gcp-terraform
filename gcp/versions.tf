@@ -40,7 +40,6 @@ provider "google" {
   region  = var.mgmt_node.region
 
   default_labels = {
-    environment = var.environment
     managed-by  = "terraform"
     product     = "pexip-infinity"
   }

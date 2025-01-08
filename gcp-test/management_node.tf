@@ -21,7 +21,7 @@ resource "google_compute_instance" "management_node" {
   }
 
   network_interface {
-    subnetwork = google_compute_subnetwork.pexip_subnets[var.mgmt_node.region].self_link
+    subnetwork = local.subnet_refs[var.mgmt_node.region].self_link
 
     # Static internal IP configuration
     network_ip = google_compute_address.mgmt_internal_ip.address
@@ -43,7 +43,7 @@ resource "google_compute_instance" "management_node" {
         hostname         = var.mgmt_node.hostname
         domain           = var.mgmt_node.domain
         ip               = google_compute_address.mgmt_internal_ip.address
-        mask             = cidrnetmask(google_compute_subnetwork.pexip_subnets[var.mgmt_node.region].ip_cidr_range)
+        mask             = cidrnetmask(local.subnet_refs[var.mgmt_node.region].ip_cidr_range)
         gw               = var.mgmt_node.gateway_ip
         dns              = join(",", local.system_configs.dns_config.servers)
         ntp              = join(",", local.system_configs.ntp_config.servers)
