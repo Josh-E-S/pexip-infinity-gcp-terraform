@@ -159,13 +159,13 @@ conferencing_nodes_provisioning = {
 # You can create multiple pools in different regions/zones for redundancy.
 # They can also have different machine sizes based on the capacity required.
 transcoding_node_pools = {
-  pool-central = {  # This is the pool name, can be changed (e.g., "pool-central1")
+  pool-central = {  # This is the node or pool name, can be changed (e.g., "pool-central1", "node", etc.)
     machine_type = "n2-standard-4"
     disk_size    = 50
     disk_type    = "pd-standard"
     region       = "us-central1"
     zone         = "us-central1-a"
-    count        = 1        # Number of nodes in this pool
+    count        = 1        # Number of nodes in this pool. Will be added to the final node name
     public_ip    = true     # Assign public IP
     static_ip    = true     # Use static IP
   }
@@ -178,14 +178,14 @@ transcoding_node_pools = {
 #     disk_size    = 50
 #     region       = "us-central1"
 #     zone         = "us-central1-a"
-#     count        = 2
+#     count        = 2        # Number of nodes in this pool. Will be added to the final node name
 #   }
 #   pool-east = {
 #     machine_type = "n2-standard-4"
 #     disk_size    = 50
 #     region       = "us-east1"
 #     zone         = "us-east1-b"
-#     count        = 2
+#     count        = 2        # Number of nodes in this pool. Will be added to the final node name
 #   }
 # }
 
@@ -202,7 +202,7 @@ transcoding_node_pools = {
 # - When public IPs cannot be assigned to transcoding nodes
 # - When specific network topology requires separate proxy nodes
 proxy_node_pools = {
-  node = {  # This is the pool name, can be changed (e.g., "pool-central1")
+  node = {  # This is the node or pool name, can be changed (e.g., "pool-central1")
     region     = "us-central1"
     zone       = "us-central1-a"
     count      = 0        # Set to 0 to disable proxy nodes
