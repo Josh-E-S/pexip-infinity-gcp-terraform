@@ -9,7 +9,7 @@ locals {
       disk_type    = "pd-standard"
     }
     proxy = {
-      machine_type = "e2-standard-4"
+      machine_type = "n2-standard-4"
       disk_size    = 50
       disk_type    = "pd-standard"
     }
@@ -23,16 +23,6 @@ locals {
   mgmt_node_config = {
     tags     = [var.mgmt_node_name]
     metadata = {}
-  }
-
-  # System configurations
-  system_configs = {
-    dns_config = {
-      servers = ["8.8.8.8", "8.8.4.4"] # Google DNS servers
-    }
-    ntp_config = {
-      servers = ["time.google.com"] # Google NTP server
-    }
   }
 
   # Transcoding node configurations
@@ -61,7 +51,7 @@ locals {
           name         = "${var.proxy_node_name}-${pool_name}-${format("%d", i + 1)}"
           region       = pool.region
           zone         = pool.zone
-          machine_type = "e2-standard-4"
+          machine_type = "n2-standard-4"
           public_ip    = pool.public_ip
           static_ip    = pool.static_ip
         }

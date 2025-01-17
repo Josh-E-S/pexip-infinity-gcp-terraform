@@ -24,53 +24,66 @@ resource "google_compute_firewall" "mgmt_admin" {
 }
 
 resource "google_compute_firewall" "mgmt_ssh" {
+  count         = var.mgmt_node.services.ssh ? 1 : 0
   depends_on    = [google_project_service.apis]
-  name          = "allow-mgmt-ssh"
+  name          = "pexip-allow-mgmt-ssh"
   network       = data.google_compute_network.network.name
-  description   = "Management node SSH access"
+  description   = "Allow SSH access to management node"
   direction     = "INGRESS"
   source_ranges = var.mgmt_node.allowed_cidrs.ssh
   target_tags   = [var.mgmt_node_name]
 
   allow {
     protocol = "tcp"
-    ports    = ["22"] # SSH
+    ports    = ["22"]
   }
 }
 
-resource "google_compute_firewall" "mgmt_services" {
-  depends_on  = [google_project_service.apis]
-  name        = "pexip-mgmt-services"
-  network     = data.google_compute_network.network.name
-  description = "Management node services (LDAP, SMTP, Syslog)"
-  direction   = "INGRESS"
-  source_ranges = distinct(concat(
-    var.mgmt_node.service_cidrs.directory,
-    var.mgmt_node.service_cidrs.smtp,
-    var.mgmt_node.service_cidrs.syslog
-  ))
-  target_tags = [var.mgmt_node_name]
+resource "google_compute_firewall" "mgmt_directory" {
+  count         = var.mgmt_node.services.directory ? 1 : 0
+  depends_on    = [google_project_service.apis]
+  name          = "pexip-allow-mgmt-directory"
+  network       = data.google_compute_network.network.name
+  description   = "Allow directory service access to management node"
+  direction     = "INGRESS"
+  source_ranges = var.mgmt_node.service_cidrs.directory
+  target_tags   = [var.mgmt_node_name]
 
-  dynamic "allow" {
-    for_each = {
-      directory = var.mgmt_services.ports.directory.tcp
-      smtp      = var.mgmt_services.ports.smtp.tcp
-      syslog    = var.mgmt_services.ports.syslog.tcp
-    }
-    content {
-      protocol = "tcp"
-      ports    = allow.value
-    }
+  allow {
+    protocol = "tcp"
+    ports    = ["389", "636"] # Both LDAP and LDAPS
   }
+}
 
-  dynamic "allow" {
-    for_each = {
-      syslog = var.mgmt_services.ports.syslog.udp
-    }
-    content {
-      protocol = "udp"
-      ports    = allow.value
-    }
+resource "google_compute_firewall" "mgmt_smtp" {
+  count         = var.mgmt_node.services.smtp ? 1 : 0
+  depends_on    = [google_project_service.apis]
+  name          = "pexip-allow-mgmt-smtp"
+  network       = data.google_compute_network.network.name
+  description   = "Allow SMTP access to management node"
+  direction     = "INGRESS"
+  source_ranges = var.mgmt_node.service_cidrs.smtp
+  target_tags   = [var.mgmt_node_name]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["25", "587"] # SMTP and Submission
+  }
+}
+
+resource "google_compute_firewall" "mgmt_syslog" {
+  count         = var.mgmt_node.services.syslog ? 1 : 0
+  depends_on    = [google_project_service.apis]
+  name          = "pexip-allow-mgmt-syslog"
+  network       = data.google_compute_network.network.name
+  description   = "Allow Syslog access to management node"
+  direction     = "INGRESS"
+  source_ranges = var.mgmt_node.service_cidrs.syslog
+  target_tags   = [var.mgmt_node_name]
+
+  allow {
+    protocol = "udp"
+    ports    = ["514"] # Syslog
   }
 }
 
@@ -85,7 +98,7 @@ resource "google_compute_firewall" "transcoding_media" {
   network       = data.google_compute_network.network.name
   description   = "Transcoding node media traffic"
   direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"] # Media traffic needs to be accessible from anywhere
+  source_ranges = ["0.0.0.0/0"] # Media traffic typically needs to be accessible from anywhere
   target_tags   = [var.transcoding_node_name]
 
   allow {
@@ -101,7 +114,7 @@ resource "google_compute_firewall" "proxy_media" {
   network       = data.google_compute_network.network.name
   description   = "Proxy node media traffic"
   direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"] # Media traffic needs to be accessible from anywhere
+  source_ranges = ["0.0.0.0/0"] # Media traffic typically needs to be accessible from anywhere
   target_tags   = [var.proxy_node_name]
 
   allow {
@@ -146,17 +159,18 @@ resource "google_compute_firewall" "signaling" {
 
 # Provisioning Access for Conferencing Nodes
 resource "google_compute_firewall" "pexip_allow_provisioning" {
+  count         = var.conferencing_nodes_provisioning.services.provisioning ? 1 : 0
   depends_on    = [google_project_service.apis]
   name          = "pexip-allow-provisioning"
   network       = data.google_compute_network.network.name
   description   = "Allow access to conferencing node provisioning interface"
   direction     = "INGRESS"
-  source_ranges = var.conferencing_nodes.allowed_cidrs.provisioning
+  source_ranges = var.conferencing_nodes_provisioning.allowed_cidrs.provisioning
   target_tags   = [var.transcoding_node_name, var.proxy_node_name]
 
   allow {
     protocol = "tcp"
-    ports    = ["8443"] # Provisioning interface
+    ports    = ["8443"] # Provisioning bootstrap
   }
 }
 

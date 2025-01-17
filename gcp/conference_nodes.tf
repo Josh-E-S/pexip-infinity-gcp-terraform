@@ -35,6 +35,7 @@ resource "google_compute_instance" "transcoding_nodes" {
     local.transcoding_node_configs[each.key].metadata,
     {
       ssh-keys = local.ssh_public_key
+      block-project-ssh-keys = "true"
     }
   )
 
@@ -102,6 +103,7 @@ resource "google_compute_instance" "proxy_nodes" {
     local.proxy_node_configs[each.key].metadata,
     {
       ssh-keys = local.ssh_public_key
+      block-project-ssh-keys = "true"
     }
   )
 

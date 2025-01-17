@@ -15,8 +15,8 @@ resource "google_compute_instance" "management_node" {
   boot_disk {
     initialize_params {
       image = google_compute_image.mgmt_image.self_link
-      size  = local.mgmt_node.disk_size
-      type  = local.mgmt_node.disk_type
+      size  = var.mgmt_node.disk_size
+      type  = var.mgmt_node.disk_type
     }
   }
 
@@ -38,6 +38,7 @@ resource "google_compute_instance" "management_node" {
 
   metadata = {
     ssh-keys = local.ssh_public_key
+    block-project-ssh-keys = "true"
   }
 
   lifecycle {

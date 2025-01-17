@@ -52,13 +52,19 @@ variable "proxy_node_name" {
 variable "mgmt_node" {
   description = "Management node configuration"
   type = object({
-    zone                = string
-    region              = string
-    public_ip           = bool
-    static_ip           = optional(bool, true)
-    machine_type        = string
-    disk_size           = number
-    disk_type           = optional(string, "pd-standard")
+    zone         = string
+    region       = string
+    machine_type = string
+    disk_size    = number
+    disk_type    = optional(string, "pd-standard")
+    public_ip    = bool
+    static_ip    = optional(bool, true)
+    services = object({
+      ssh       = bool
+      directory = bool
+      smtp      = bool
+      syslog    = bool
+    })
     allowed_cidrs = object({
       admin_ui = list(string)
       ssh      = list(string)
@@ -69,6 +75,29 @@ variable "mgmt_node" {
       syslog    = list(string)
     })
   })
+
+  validation {
+    condition = alltrue([
+      for cidr in var.mgmt_node.allowed_cidrs.admin_ui : can(cidrhost(cidr, 0))
+    ])
+    error_message = "Management node admin_ui CIDR ranges must be valid (e.g., '0.0.0.0/0' or '10.0.0.0/24')"
+  }
+
+  validation {
+    condition = alltrue([
+      for cidr in var.mgmt_node.allowed_cidrs.ssh : can(cidrhost(cidr, 0))
+    ])
+    error_message = "Management node SSH CIDR ranges must be valid (e.g., '0.0.0.0/0' or '10.0.0.0/24')"
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      [for cidr in var.mgmt_node.service_cidrs.directory : can(cidrhost(cidr, 0))],
+      [for cidr in var.mgmt_node.service_cidrs.smtp : can(cidrhost(cidr, 0))],
+      [for cidr in var.mgmt_node.service_cidrs.syslog : can(cidrhost(cidr, 0))]
+    ]))
+    error_message = "Management node service CIDR ranges must be valid (e.g., '0.0.0.0/0' or '10.0.0.0/24')"
+  }
 }
 
 # =============================================================================
@@ -89,7 +118,7 @@ variable "transcoding_node_pools" {
 }
 
 variable "proxy_node_pools" {
-  description = "Proxy node pool configurations. All pools use e2-standard-4."
+  description = "Proxy node pool configurations. All pools use n2-standard-4."
   type = map(object({
     region    = string
     zone      = string
@@ -276,17 +305,23 @@ variable "proxy_services" {
   }
 }
 
-variable "conferencing_nodes" {
-  description = "Conferencing nodes shared configuration"
+variable "conferencing_nodes_provisioning" {
+  description = "Conferencing nodes shared provisioning configuration"
   type = object({
+    services = object({
+      ssh          = bool
+      provisioning = bool
+    })
     allowed_cidrs = object({
-      provisioning = list(string) # CIDRs allowed to access provisioning interface (8443)
+      provisioning = list(string)
     })
   })
-  default = {
-    allowed_cidrs = {
-      provisioning = ["0.0.0.0/0"]
-    }
+
+  validation {
+    condition = alltrue([
+      for cidr in var.conferencing_nodes_provisioning.allowed_cidrs.provisioning : can(cidrhost(cidr, 0))
+    ])
+    error_message = "Conferencing nodes provisioning CIDR ranges must be valid (e.g., '0.0.0.0/0' or '10.0.0.0/24')"
   }
 }
 
@@ -299,17 +334,26 @@ variable "pexip_version" {
 }
 
 variable "pexip_images" {
-  description = "Pexip Infinity image configurations"
+  description = "Pexip Infinity image configurations. Set upload_files=true to upload and create images, or false to use existing images"
   type = object({
+    upload_files = bool
     management = object({
-      name        = optional(string)
-      source_file = string
+      source_file = optional(string)
+      image_name  = string
     })
     conference = object({
-      name        = optional(string)
-      source_file = string
+      source_file = optional(string)
+      image_name  = string
     })
   })
+
+  validation {
+    condition = (
+      !var.pexip_images.upload_files || 
+      (var.pexip_images.management.source_file != null && var.pexip_images.conference.source_file != null)
+    )
+    error_message = "When upload_files is true, both management.source_file and conference.source_file must be specified"
+  }
 }
 
 # =============================================================================

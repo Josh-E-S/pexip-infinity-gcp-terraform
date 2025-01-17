@@ -14,12 +14,6 @@ terraform {
       source  = "hashicorp/null"
       version = ">= 3.0.0"
     }
-
-    # Time provider for creating delays or timestamps
-    time = {
-      source  = "hashicorp/time"
-      version = ">= 0.9.0"
-    }
   }
 }
 

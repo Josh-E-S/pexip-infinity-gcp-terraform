@@ -30,7 +30,7 @@ locals {
 
 resource "null_resource" "precondition_checks" {
   lifecycle {
-    
+
     # Region and Zone Configuration
     precondition {
       condition = alltrue([
@@ -71,12 +71,6 @@ resource "null_resource" "precondition_checks" {
         var.proxy_services.ports.media.udp_range.start < var.proxy_services.ports.media.udp_range.end
       )
       error_message = "Media port ranges must be valid (start < end)"
-    }
-
-    # System Configuration
-    precondition {
-      condition     = length(var.dns_servers) > 0 && length(var.ntp_servers) > 0
-      error_message = "At least one DNS server and one NTP server must be configured"
     }
   }
 }

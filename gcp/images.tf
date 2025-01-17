@@ -18,29 +18,31 @@ resource "google_storage_bucket" "pexip_images" {
 # =============================================================================
 # Management Node Image
 # =============================================================================
-locals {
-  mgmt_image_name = coalesce(
-    var.pexip_images.management.name,
-    "pexip-infinity-mgmt-${var.pexip_version}"
-  )
-}
 
-# Upload Management Node image to Cloud Storage
+# Upload Management Node image to Cloud Storage if needed
 resource "google_storage_bucket_object" "mgmt_image" {
   name   = "pexip-infinity-mgmt-${var.pexip_version}.tar.gz"
-  source = var.pexip_images.management.source_file
+  source = var.pexip_images.upload_files ? var.pexip_images.management.source_file : null
   bucket = google_storage_bucket.pexip_images.name
 
-  depends_on = [google_storage_bucket.pexip_images]
+    timeouts {
+    create = "60m"
+  }
+
 }
 
-# Create Management Node custom image
+# Create or reference Management Node image
 resource "google_compute_image" "mgmt_image" {
-  name = local.mgmt_image_name
+  name = var.pexip_images.management.image_name
 
-  raw_disk {
-    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.mgmt_image.name}"
+  dynamic "raw_disk" {
+    for_each = var.pexip_images.upload_files ? [1] : []
+    content {
+      source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.mgmt_image.name}"
+    }
   }
+
+  source_image = var.pexip_images.upload_files ? null : var.pexip_images.management.image_name
 
   labels = {
     managed-by = "terraform"
@@ -51,37 +53,37 @@ resource "google_compute_image" "mgmt_image" {
 
   timeouts {
     create = "30m"
+    delete = "30m"
   }
-
-  depends_on = [google_storage_bucket_object.mgmt_image]
 }
 
 # =============================================================================
 # Conference Node Image
 # =============================================================================
-locals {
-  conference_image_name = coalesce(
-    var.pexip_images.conference.name,
-    "pexip-infinity-conf-${var.pexip_version}"
-  )
-}
 
-# Upload Conference Node image to Cloud Storage
+# Upload Conference Node image to Cloud Storage if needed
 resource "google_storage_bucket_object" "conference_image" {
   name   = "pexip-infinity-conf-${var.pexip_version}.tar.gz"
-  source = var.pexip_images.conference.source_file
+  source = var.pexip_images.upload_files ? var.pexip_images.conference.source_file : null
   bucket = google_storage_bucket.pexip_images.name
 
-  depends_on = [google_storage_bucket.pexip_images]
+    timeouts {
+    create = "60m"
+  }
 }
 
-# Create Conference Node custom image
+# Create or reference Conference Node image
 resource "google_compute_image" "conf_image" {
-  name = local.conference_image_name
+  name = var.pexip_images.conference.image_name
 
-  raw_disk {
-    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.conference_image.name}"
+  dynamic "raw_disk" {
+    for_each = var.pexip_images.upload_files ? [1] : []
+    content {
+      source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.conference_image.name}"
+    }
   }
+
+  source_image = var.pexip_images.upload_files ? null : var.pexip_images.conference.image_name
 
   labels = {
     managed-by = "terraform"
@@ -94,6 +96,4 @@ resource "google_compute_image" "conf_image" {
     create = "30m"
     delete = "30m"
   }
-
-  depends_on = [google_storage_bucket_object.conference_image]
 }

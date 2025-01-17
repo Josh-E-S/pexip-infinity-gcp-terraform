@@ -27,7 +27,7 @@ resource "google_project_service" "apis" {
   disable_dependent_services = false
 }
 
-# Add explicit dependencies to resources that require these APIs
+# Add dependencies to resources that require these APIs
 locals {
   api_dependencies = [for api in google_project_service.apis : api.id]
 }

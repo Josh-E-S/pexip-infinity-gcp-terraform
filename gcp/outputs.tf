@@ -86,31 +86,24 @@ output "proxy_nodes" {
 
 # Network Outputs
 output "network_details" {
-  description = "Network configuration details"
+  description = "Network and firewall rule details"
   value = {
-    network_name = data.google_compute_network.network.name
-    network_id   = data.google_compute_network.network.id
-    subnets = {
-      for region, config in var.regions : region => {
-        name = config.subnet_name
-      }
+    network = {
+      name = data.google_compute_network.network.name
+      id   = data.google_compute_network.network.id
     }
     firewall_rules = {
       management = {
         admin_ui = google_compute_firewall.mgmt_admin.name
-        ssh      = google_compute_firewall.mgmt_ssh.name
-        services = google_compute_firewall.mgmt_services.name
+        ssh      = try(google_compute_firewall.mgmt_ssh[0].name, null)
+        directory = try(google_compute_firewall.mgmt_directory[0].name, null)
+        smtp      = try(google_compute_firewall.mgmt_smtp[0].name, null)
+        syslog    = try(google_compute_firewall.mgmt_syslog[0].name, null)
       }
       conferencing = {
-        transcoding = {
-          media    = google_compute_firewall.transcoding_media.name
-          services = try(google_compute_firewall.transcoding_services[0].name, null)
-        }
-        proxy = {
-          media = google_compute_firewall.proxy_media.name
-        }
-        signaling = google_compute_firewall.signaling.name
-        internal  = google_compute_firewall.internal.name
+        provisioning = try(google_compute_firewall.pexip_allow_provisioning[0].name, null)
+        signaling    = google_compute_firewall.signaling.name
+        internal     = google_compute_firewall.internal.name
       }
     }
   }
@@ -165,7 +158,7 @@ output "connection_info" {
 
 # Storage Outputs
 output "storage_bucket" {
-  description = "Details of the storage bucket"
+  description = "Details of the GCS bucket used for storing Pexip images"
   value = {
     name     = google_storage_bucket.pexip_images.name
     location = google_storage_bucket.pexip_images.location

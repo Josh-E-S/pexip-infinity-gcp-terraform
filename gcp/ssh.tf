@@ -25,7 +25,7 @@ resource "google_secret_manager_secret_version" "ssh_private_key" {
   secret_data = tls_private_key.ssh.private_key_pem
 }
 
-# Local for SSH key access
+# Local for SSH key access. Sets the admin user to "admin" for GCP
 locals {
   ssh_public_key = "admin:${tls_private_key.ssh.public_key_openssh}"
 }
