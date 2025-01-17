@@ -1,10 +1,10 @@
-# Terraform Pexip Infinity for GCP
+# Pexip Infinity on Google Cloud Platform
 
 Infrastructure as Code templates for deploying Pexip Infinity video conferencing platform on Google Cloud Platform (GCP).
 
 ## Overview
 
-This repository contains Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure on GCP. The templates are designed to provide a flexible, secure, and maintainable deployment process.
+This repository provides Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure on GCP. The templates are designed to provide a flexible, secure, and maintainable deployment process following GCP best practices.
 
 ### Features
 
@@ -15,6 +15,23 @@ This repository contains Terraform templates for deploying and managing Pexip In
 - Production-ready security settings
 - Fine-grained service access control
 - Comprehensive documentation
+
+## Repository Structure
+
+```
+.
+├── apis.tf              # GCP API enablement
+├── conference_nodes.tf  # Transcoding and proxy node configuration
+├── images.tf           # Pexip image management
+├── locals.tf          # Local variables and computed values
+├── main.tf            # Core infrastructure configuration
+├── management_node.tf # Management node configuration
+├── network.tf         # Networking and firewall rules
+├── outputs.tf         # Output definitions
+├── ssh.tf            # SSH key management
+├── variables.tf      # Input variable definitions
+└── versions.tf       # Provider and version constraints
+```
 
 ## Prerequisites
 
@@ -32,7 +49,7 @@ Before you begin, ensure you have:
 1. Clone the repository:
 ```bash
 git clone https://github.com/Josh-E-S/terraform-pexip-infinity.git
-cd terraform-pexip-infinity/gcp
+cd terraform-pexip-infinity
 ```
 
 2. Copy and modify the example variables file:
@@ -53,74 +70,33 @@ terraform plan
 terraform apply
 ```
 
-## Configuration Options
+## Configuration
 
-### Required Configuration
+### Required Variables
 
-- `project_id` - Your GCP project ID
-- `network_name` - Existing VPC network name
-- `regions` - Map of regions with subnet names and zones
-- `pexip_images` - Management and conference node image configuration
+- `project_id`: Your GCP project ID
+- `network_name`: Name of your VPC network
+- `pexip_images`: Configuration for Pexip Infinity images
+- `management_node`: Management node configuration
+- `transcoding_node_pools`: Transcoding node pool configurations
 
-### Node Configuration
+See `terraform.tfvars.example` for a complete list of variables and their descriptions.
 
-#### Management Node
-- Configurable machine type and disk
-- Service enable/disable flags for:
-  - SSH access
-  - Directory (LDAP) access
-  - SMTP access
-  - Syslog access
-- CIDR-based access control
+## Security
 
-#### Transcoding Nodes
-- Multiple pool support
-- Region and zone placement
-- Configurable machine types
-- Public IP and static IP options
-- Protocol and service configuration
+This deployment follows GCP security best practices:
+- Least privilege access
+- SSH key-based authentication
+- Firewall rules for service access control
+- Secret management for sensitive data
 
-#### Proxy Nodes (Optional)
-- Can be disabled by setting count = 0
-- Not recommended for cloud deployments
-- Only needed for specific network requirements
+## Contributing
 
-### Security Features
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-- SSH key management via Secret Manager
-- Firewall rules with CIDR-based access control
-- Service-specific access controls
-- Secure defaults with option to customize
+## License
 
-## File Structure
-
-```
-gcp/
-├── apis.tf           # API enablement
-├── conference_nodes.tf # Conferencing node configuration
-├── images.tf         # Image management
-├── locals.tf         # Local variables
-├── main.tf          # Main configuration
-├── management_node.tf # Management node configuration
-├── network.tf       # Network and firewall rules
-├── outputs.tf       # Output definitions
-├── ssh.tf          # SSH key management
-├── variables.tf    # Variable definitions
-└── versions.tf     # Version constraints
-```
-
-## Maintenance
-
-To modify your deployment:
-
-1. Update your terraform.tfvars file
-2. Run terraform plan to review changes
-3. Apply changes with terraform apply
-
-To destroy the deployment:
-```bash
-terraform destroy
-```
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Support
 
