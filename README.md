@@ -1,3 +1,5 @@
+🚧 Work in Progress: This project is under active development and only for community use. This is not and Official Pexip repo. 🚧
+
 # Pexip Infinity on Google Cloud Platform
 
 Infrastructure as Code templates for deploying Pexip Infinity video conferencing platform on Google Cloud Platform (GCP).
