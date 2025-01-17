@@ -21,7 +21,7 @@ locals {
 
   # Management node configuration
   mgmt_node_config = {
-    tags = [var.mgmt_node_name]
+    tags     = [var.mgmt_node_name]
     metadata = {}
   }
 

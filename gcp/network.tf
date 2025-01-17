@@ -9,7 +9,7 @@ data "google_compute_network" "network" {
 # Management Node Firewall Rules
 # =============================================================================
 resource "google_compute_firewall" "mgmt_admin" {
-  depends_on = [google_project_service.apis]
+  depends_on    = [google_project_service.apis]
   name          = "allow-mgmt-admin"
   network       = data.google_compute_network.network.name
   description   = "Management node administrative access (Web UI)"
@@ -24,7 +24,7 @@ resource "google_compute_firewall" "mgmt_admin" {
 }
 
 resource "google_compute_firewall" "mgmt_ssh" {
-  depends_on = [google_project_service.apis]
+  depends_on    = [google_project_service.apis]
   name          = "allow-mgmt-ssh"
   network       = data.google_compute_network.network.name
   description   = "Management node SSH access"
@@ -39,7 +39,7 @@ resource "google_compute_firewall" "mgmt_ssh" {
 }
 
 resource "google_compute_firewall" "mgmt_services" {
-  depends_on = [google_project_service.apis]
+  depends_on  = [google_project_service.apis]
   name        = "pexip-mgmt-services"
   network     = data.google_compute_network.network.name
   description = "Management node services (LDAP, SMTP, Syslog)"
@@ -80,7 +80,7 @@ resource "google_compute_firewall" "mgmt_services" {
 
 # Media Traffic for Transcoding Nodes
 resource "google_compute_firewall" "transcoding_media" {
-  depends_on = [google_project_service.apis]
+  depends_on    = [google_project_service.apis]
   name          = "allow-transcoding-media"
   network       = data.google_compute_network.network.name
   description   = "Transcoding node media traffic"
@@ -96,7 +96,7 @@ resource "google_compute_firewall" "transcoding_media" {
 
 # Media Traffic for Proxy Nodes
 resource "google_compute_firewall" "proxy_media" {
-  depends_on = [google_project_service.apis]
+  depends_on    = [google_project_service.apis]
   name          = "allow-proxy-media"
   network       = data.google_compute_network.network.name
   description   = "Proxy node media traffic"
@@ -112,7 +112,7 @@ resource "google_compute_firewall" "proxy_media" {
 
 # Signaling Traffic for All Conference Nodes
 resource "google_compute_firewall" "signaling" {
-  depends_on = [google_project_service.apis]
+  depends_on    = [google_project_service.apis]
   name          = "allow-signaling"
   network       = data.google_compute_network.network.name
   description   = "Conference node signaling traffic"
@@ -146,7 +146,7 @@ resource "google_compute_firewall" "signaling" {
 
 # Provisioning Access for Conferencing Nodes
 resource "google_compute_firewall" "pexip_allow_provisioning" {
-  depends_on = [google_project_service.apis]
+  depends_on    = [google_project_service.apis]
   name          = "pexip-allow-provisioning"
   network       = data.google_compute_network.network.name
   description   = "Allow access to conferencing node provisioning interface"
@@ -156,13 +156,13 @@ resource "google_compute_firewall" "pexip_allow_provisioning" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8443"]  # Provisioning interface
+    ports    = ["8443"] # Provisioning interface
   }
 }
 
 # Internal Communication between Nodes
 resource "google_compute_firewall" "internal" {
-  depends_on = [google_project_service.apis]
+  depends_on  = [google_project_service.apis]
   name        = "allow-internal"
   network     = data.google_compute_network.network.name
   description = "Internal communication between Pexip nodes"
@@ -178,7 +178,7 @@ resource "google_compute_firewall" "internal" {
 
 # Optional Services for Transcoding Nodes
 resource "google_compute_firewall" "transcoding_services" {
-  depends_on = [google_project_service.apis]
+  depends_on    = [google_project_service.apis]
   count         = var.transcoding_services.enable_services.one_touch_join || var.transcoding_services.enable_services.event_sink ? 1 : 0
   name          = "allow-transcoding-services"
   network       = data.google_compute_network.network.name

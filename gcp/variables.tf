@@ -64,8 +64,8 @@ variable "mgmt_node" {
     public_ip           = bool
     static_ip           = optional(bool, true)
     machine_type        = string
-    disk_size          = number
-    disk_type          = optional(string, "pd-standard")
+    disk_size           = number
+    disk_type           = optional(string, "pd-standard")
     allowed_cidrs = object({
       admin_ui = list(string)
       ssh      = list(string)
@@ -98,11 +98,11 @@ variable "transcoding_node_pools" {
 variable "proxy_node_pools" {
   description = "Proxy node pool configurations. All pools use e2-standard-4."
   type = map(object({
-    region     = string
-    zone       = string
-    count      = number
-    public_ip  = bool
-    static_ip  = optional(bool, true)
+    region    = string
+    zone      = string
+    count     = number
+    public_ip = bool
+    static_ip = optional(bool, true)
   }))
 }
 
@@ -287,7 +287,7 @@ variable "conferencing_nodes" {
   description = "Conferencing nodes shared configuration"
   type = object({
     allowed_cidrs = object({
-      provisioning = list(string)  # CIDRs allowed to access provisioning interface (8443)
+      provisioning = list(string) # CIDRs allowed to access provisioning interface (8443)
     })
   })
   default = {

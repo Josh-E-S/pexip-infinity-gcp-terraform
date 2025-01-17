@@ -21,7 +21,7 @@ resource "google_compute_instance" "management_node" {
   }
 
   network_interface {
-    network = data.google_compute_network.network.name
+    network    = data.google_compute_network.network.name
     subnetwork = var.regions[var.mgmt_node.region].subnet_name
 
     # Static internal IP configuration

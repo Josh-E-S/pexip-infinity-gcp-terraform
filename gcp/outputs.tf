@@ -188,11 +188,11 @@ output "images" {
   value = {
     storage_bucket = google_storage_bucket.pexip_images.name
     management = {
-      name    = google_compute_image.mgmt_image.name
+      name      = google_compute_image.mgmt_image.name
       self_link = google_compute_image.mgmt_image.self_link
     }
     conference = {
-      name    = google_compute_image.conf_image.name
+      name      = google_compute_image.conf_image.name
       self_link = google_compute_image.conf_image.self_link
     }
   }

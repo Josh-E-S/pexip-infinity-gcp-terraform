@@ -7,7 +7,7 @@ resource "tls_private_key" "ssh" {
 # Store private key in Secret Manager
 resource "google_secret_manager_secret" "ssh_private_key" {
   depends_on = [google_project_service.apis]
-  secret_id = "${var.project_id}-pexip-ssh-key"
+  secret_id  = "${var.project_id}-pexip-ssh-key"
 
   replication {
     auto {}
