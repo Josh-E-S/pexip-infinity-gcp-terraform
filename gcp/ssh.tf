@@ -27,5 +27,5 @@ resource "google_secret_manager_secret_version" "ssh_private_key" {
 
 # Local for SSH key access
 locals {
-  ssh_public_key = "${var.mgmt_node.admin_username}:${tls_private_key.ssh.public_key_openssh}"
+  ssh_public_key = "admin:${tls_private_key.ssh.public_key_openssh}"
 }

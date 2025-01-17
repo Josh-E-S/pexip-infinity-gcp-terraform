@@ -54,13 +54,6 @@ variable "mgmt_node" {
   type = object({
     zone                = string
     region              = string
-    hostname            = string
-    domain              = string
-    gateway_ip          = string
-    subnet_cidr         = string
-    admin_username      = string
-    admin_password_hash = string
-    os_password_hash    = string
     public_ip           = bool
     static_ip           = optional(bool, true)
     machine_type        = string

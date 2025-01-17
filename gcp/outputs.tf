@@ -46,8 +46,6 @@ output "management_node" {
     machine_type = google_compute_instance.management_node.machine_type
     zone         = google_compute_instance.management_node.zone
     region       = var.mgmt_node.region
-    hostname     = var.mgmt_node.hostname
-    domain       = var.mgmt_node.domain
   }
 }
 

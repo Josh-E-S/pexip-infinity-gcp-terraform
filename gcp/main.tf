@@ -41,15 +41,6 @@ resource "null_resource" "precondition_checks" {
       error_message = "Management node password hashes must be in correct format (PBKDF2-SHA256 for admin, SHA-512 for OS)"
     }
 
-    # Management Node Network Configuration
-    precondition {
-      condition = (
-        can(regex("^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}[a-zA-Z0-9]$", var.mgmt_node.hostname)) &&
-        can(regex("^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$", var.mgmt_node.domain))
-      )
-      error_message = "Invalid management node hostname or domain configuration"
-    }
-
     # Region and Zone Configuration
     precondition {
       condition = alltrue([
