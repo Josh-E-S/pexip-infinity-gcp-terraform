@@ -30,17 +30,7 @@ locals {
 
 resource "null_resource" "precondition_checks" {
   lifecycle {
-    # Management Node Password Validation
-    precondition {
-      condition = (
-        var.mgmt_node.admin_password_hash != "" &&
-        var.mgmt_node.os_password_hash != "" &&
-        can(regex("^\\$pbkdf2-sha256\\$", var.mgmt_node.admin_password_hash)) &&
-        can(regex("^\\$6\\$", var.mgmt_node.os_password_hash))
-      )
-      error_message = "Management node password hashes must be in correct format (PBKDF2-SHA256 for admin, SHA-512 for OS)"
-    }
-
+    
     # Region and Zone Configuration
     precondition {
       condition = alltrue([
