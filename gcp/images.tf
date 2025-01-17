@@ -25,7 +25,7 @@ resource "google_storage_bucket_object" "mgmt_image" {
   source = var.pexip_images.upload_files ? var.pexip_images.management.source_file : null
   bucket = google_storage_bucket.pexip_images.name
 
-    timeouts {
+  timeouts {
     create = "60m"
   }
 
@@ -67,7 +67,7 @@ resource "google_storage_bucket_object" "conference_image" {
   source = var.pexip_images.upload_files ? var.pexip_images.conference.source_file : null
   bucket = google_storage_bucket.pexip_images.name
 
-    timeouts {
+  timeouts {
     create = "60m"
   }
 }

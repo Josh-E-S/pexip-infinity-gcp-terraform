@@ -94,8 +94,8 @@ output "network_details" {
     }
     firewall_rules = {
       management = {
-        admin_ui = google_compute_firewall.mgmt_admin.name
-        ssh      = try(google_compute_firewall.mgmt_ssh[0].name, null)
+        admin_ui  = google_compute_firewall.mgmt_admin.name
+        ssh       = try(google_compute_firewall.mgmt_ssh[0].name, null)
         directory = try(google_compute_firewall.mgmt_directory[0].name, null)
         smtp      = try(google_compute_firewall.mgmt_smtp[0].name, null)
         syslog    = try(google_compute_firewall.mgmt_syslog[0].name, null)
@@ -169,8 +169,8 @@ output "images" {
 # Connection Information Output
 output "connection_info" {
   description = "Instructions for connecting to your management node and performing initial configuration"
-  value = <<EOF
-Congratulations on your new Pexip Infinity deployment! 
+  value       = <<EOF
+Congratulations on your new Pexip Infinity deployment!
 
 SSH Connection Instructions for installation wizard:
 

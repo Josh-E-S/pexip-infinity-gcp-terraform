@@ -37,7 +37,7 @@ resource "google_compute_instance" "management_node" {
   }
 
   metadata = {
-    ssh-keys = local.ssh_public_key
+    ssh-keys               = local.ssh_public_key
     block-project-ssh-keys = "true"
   }
 

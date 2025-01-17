@@ -20,14 +20,9 @@ resource "google_project_service" "apis" {
   project = var.project_id
   service = each.value
 
-  # Set to false to prevent issues with dependent services
+  # Prevent issues with dependent services after destroy
   disable_on_destroy = false
 
-  # Do not disable dependent services automatically
+  # Do not disable dependent services automatically to avoid other issues
   disable_dependent_services = false
-}
-
-# Add dependencies to resources that require these APIs
-locals {
-  api_dependencies = [for api in google_project_service.apis : api.id]
 }

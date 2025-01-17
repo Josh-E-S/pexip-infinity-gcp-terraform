@@ -63,7 +63,7 @@ regions = {
 # Pool Naming Tips:
 # - For single region deployments, you can use simple names like "node" or "pool1"
 # - For multi-region deployments, consider using region-based names:
-#   - "central", "east", "europe" 
+#   - "central", "east", "europe"
 #   - "us-central", "us-east", "eu-west"
 #
 # These base prefixes will be used to generate the full node names:
@@ -192,7 +192,7 @@ transcoding_node_pools = {
 # =============================================================================
 # Proxy Node Pool Configuration
 # =============================================================================
-# Proxy nodes are optional and NOT recommended for cloud deployments since 
+# Proxy nodes are optional and NOT recommended for cloud deployments since
 # transcoding nodes can have a public 1:1 NAT and handle all functions.
 #
 # To deploy WITHOUT proxy nodes, simply set count = 0 or remove this block entirely.

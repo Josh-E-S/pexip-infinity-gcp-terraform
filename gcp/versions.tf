@@ -3,19 +3,21 @@ terraform {
   required_version = ">= 1.0.0"
 
   required_providers {
-    # Random provider for generating unique identifiers
-    random = {
-      source  = "hashicorp/random"
-      version = ">= 3.0.0"
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 4.0.0"
     }
-
-    # Null provider for precondition checks
     null = {
       source  = "hashicorp/null"
+      version = ">= 3.0.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
       version = ">= 3.0.0"
     }
   }
 }
 
-provider "random" {}
-provider "null" {}
+provider "google" {
+  project = var.project_id
+}

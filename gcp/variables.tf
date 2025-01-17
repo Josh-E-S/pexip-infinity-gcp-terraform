@@ -349,24 +349,9 @@ variable "pexip_images" {
 
   validation {
     condition = (
-      !var.pexip_images.upload_files || 
+      !var.pexip_images.upload_files ||
       (var.pexip_images.management.source_file != null && var.pexip_images.conference.source_file != null)
     )
     error_message = "When upload_files is true, both management.source_file and conference.source_file must be specified"
   }
-}
-
-# =============================================================================
-# System Configuration
-# =============================================================================
-variable "dns_servers" {
-  description = "List of DNS servers"
-  type        = list(string)
-  default     = ["8.8.8.8", "8.8.4.4"]
-}
-
-variable "ntp_servers" {
-  description = "List of NTP servers"
-  type        = list(string)
-  default     = ["time.google.com"]
 }
