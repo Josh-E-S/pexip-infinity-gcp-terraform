@@ -4,7 +4,7 @@ This project is under active development and only for community use. This is not
 
 # Pexip Infinity on Google Cloud Platform
 
-Infrastructure as Code template for deploying Pexip Infinity video conferencing platform on Google Cloud Platform (GCP).
+Infrastructure as Code template for deploying Pexip Infinity video conferencing platform on Google Cloud Platform (GCP). This template will deploy the Pexip infrastructure, but still requires configuration after deployment.
 
 ## Overview
 
@@ -12,13 +12,12 @@ This repository provides Terraform templates for deploying and managing Pexip In
 
 ### Features
 
-- Single management node deployment with configurable services
-- Multi-region transcoding node support
-- Optional proxy node deployment
+- Multi-region transcoding node support by use of "pool" concept
+- Optional proxy node deployment also by use of "pool" concept
 - Customizable instance configurations
-- Production-ready security settings
-- Fine-grained service access control
-- Comprehensive documentation
+- Flexible image management:
+  - Use existing images from your GCP bucket
+  - Automatically upload and create images from local files
 
 ## Repository Structure
 
@@ -39,14 +38,23 @@ This repository provides Terraform templates for deploying and managing Pexip In
 
 ## Prerequisites
 
-Before you begin, ensure you have:
-
+### Required for Deployment
 1. Terraform >= 1.0.0
 2. GCP Project with:
-   - Required APIs enabled (this module will attempt to enable them)
+   - Required APIs enabled. This module will attempt to enable them.
    - Service Account with necessary permissions
 3. VPC Network and subnets already created
-4. Pexip Infinity images (downloadable from Pexip's website)
+4. Pexip Infinity Management and Conference node images. These can be downloaded from https://www.pexip.com/help-center/platform-download
+   - Option 1: Images already uploaded to a GCP bucket
+   - Option 2: Local image files that the template will upload to a new or existing bucket
+
+### Optional Development Tools
+If you plan to contribute to this project, we use the following tools to maintain code quality:
+- Pre-commit hooks for code formatting and validation
+- TFLint for Terraform linting
+- terraform-docs for documentation generation
+
+See the Development Setup section for installation instructions.
 
 ## Quick Start
 
@@ -64,7 +72,20 @@ cp terraform.tfvars.example terraform.tfvars
 3. Configure your deployment in terraform.tfvars:
    - Set your GCP project ID and network name
    - Configure regions and zones
-   - Set image paths and names
+   - Set image configuration:
+     ```hcl
+     pexip_images = {
+       management = {
+         # Option 1: Use existing GCP image
+         name = "existing-management-image"
+         # OR Option 2: Specify local file to upload
+         source_file = "/path/to/pexip-infinity-management-node.qcow2"
+       }
+       conference = {
+         # Similar options for conference node image
+       }
+     }
+     ```
    - Configure node pools and services
 
 4. Initialize and apply:
@@ -87,6 +108,8 @@ terraform apply
 See `terraform.tfvars.example` for a complete list of variables and their descriptions.
 
 ## Development Setup
+
+This section is only needed if you plan to contribute to this project. It's not required for deploying Pexip Infinity.
 
 ### Pre-commit Hooks
 
