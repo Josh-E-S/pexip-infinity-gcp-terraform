@@ -1,6 +1,6 @@
 # 🚧 Work in Progress 🚧
 
-This project is under active development and only for community use. This is not and official Pexip repo.
+This project is under active development and only for community use. This is not an official Pexip repo.
 
 # Pexip Infinity on Google Cloud Platform
 
@@ -8,7 +8,7 @@ Infrastructure as Code template for deploying Pexip Infinity video conferencing 
 
 ## Overview
 
-This repository provides Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure on GCP. The templates are designed to provide a flexible easy-to-use experience for deploying and managing Pexip Infinity on GCP.
+This repository provides Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure on GCP. The templates are designed to provide a flexible, easy-to-use experience for deploying and managing Pexip Infinity on GCP.
 
 ### Features
 
@@ -52,8 +52,8 @@ Before you begin, ensure you have:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Josh-E-S/terraform-pexip-infinity.git
-cd terraform-pexip-infinity
+git clone https://github.com/Josh-E-S/pexip-infinity-gcp-terraform.git
+cd pexip-infinity-gcp-terraform
 ```
 
 2. Copy and modify the example variables file:
