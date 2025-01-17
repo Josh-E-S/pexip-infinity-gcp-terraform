@@ -133,29 +133,6 @@ output "deployment_summary" {
   }
 }
 
-# Connection Information
-output "connection_info" {
-  description = "Connection information for Pexip Infinity"
-  value = {
-    admin_interface = format(
-      "https://%s",
-      coalesce(
-        try(google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip, null),
-        google_compute_instance.management_node.network_interface[0].network_ip
-      )
-    )
-    ssh_command = format(
-      "ssh admin@%s",
-      coalesce(
-        try(google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip, null),
-        google_compute_instance.management_node.network_interface[0].network_ip
-      )
-    )
-  }
-
-  sensitive = true
-}
-
 # Storage Outputs
 output "storage_bucket" {
   description = "Details of the GCS bucket used for storing Pexip images"
@@ -187,4 +164,24 @@ output "images" {
       self_link = google_compute_image.conf_image.self_link
     }
   }
+}
+
+# Connection Information Output
+output "connection_info" {
+  description = "Instructions for connecting to your management node and performing initial configuration"
+  value = <<EOF
+Congratulations on your new Pexip Infinity deployment! 
+
+SSH Connection Instructions for installation wizard:
+
+1. Get the private key from Secret Manager:
+   gcloud secrets versions access latest --secret="${var.project_id}-pexip-ssh-key" > pexip_key
+
+2. Set correct permissions on the key file:
+   chmod 600 pexip_key
+
+3. Connect to management node:
+   ssh -i pexip_key admin@${try(google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip, "MANAGEMENT_NODE_IP")}
+
+EOF
 }
