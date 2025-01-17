@@ -1,32 +1,31 @@
-# README.md
-# Terraform Pexip Infinity
+# Terraform Pexip Infinity for GCP
 
-Infrastructure as Code templates for deploying Pexip Infinity video conferencing platform on multiple cloud providers.
+Infrastructure as Code templates for deploying Pexip Infinity video conferencing platform on Google Cloud Platform (GCP).
 
 ## Overview
 
-This repository contains Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure. The templates are designed to support deployments on multiple cloud providers, starting with Google Cloud Platform (GCP).
+This repository contains Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure on GCP. The templates are designed to provide a flexible, secure, and maintainable deployment process.
 
 ### Features
 
-- Single management node deployment
-- Multi-region conference node support
+- Single management node deployment with configurable services
+- Multi-region transcoding node support
+- Optional proxy node deployment
 - Customizable instance configurations
 - Production-ready security settings
-- Variable-driven architecture
-
-## Cloud Provider Support
-
-- GCP (Current)
-- AWS (Planned)
-- Azure (Planned)
+- Fine-grained service access control
+- Comprehensive documentation
 
 ## Prerequisites
 
-- Terraform >= 1.0.0
-- GCP Account and Project
-- Service Account with necessary permissions
-- Pexip Infinity images accessible in your project
+Before you begin, ensure you have:
+
+1. Terraform >= 1.0.0
+2. GCP Project with:
+   - Required APIs enabled (this module will attempt to enable them)
+   - Service Account with necessary permissions
+3. VPC Network and subnets already created
+4. Pexip Infinity images (downloadable from Pexip's website)
 
 ## Quick Start
 
@@ -38,53 +37,91 @@ cd terraform-pexip-infinity/gcp
 
 2. Copy and modify the example variables file:
 ```bash
-cp examples/basic/terraform.tfvars.example terraform.tfvars
+cp terraform.tfvars.example terraform.tfvars
 ```
 
-3. Initialize Terraform:
+3. Configure your deployment in terraform.tfvars:
+   - Set your GCP project ID and network name
+   - Configure regions and zones
+   - Set image paths and names
+   - Configure node pools and services
+
+4. Initialize and apply:
 ```bash
 terraform init
-```
-
-4. Deploy the infrastructure:
-```bash
 terraform plan
 terraform apply
 ```
 
-## Usage
+## Configuration Options
 
-### Basic Deployment
-
-For a basic deployment with a single management node and conference node, use the basic example:
-
-```bash
-cd examples/basic
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your configuration
-```
-
-### Production Deployment
-
-For a production deployment with multiple conference nodes across regions, use the production example:
-
-```bash
-cd examples/production
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your configuration
-```
-
-## Configuration
-
-### Required Variables
+### Required Configuration
 
 - `project_id` - Your GCP project ID
-- `region` - Primary region for deployment
-- `management_node_zone` - Zone for management node
-- `pexip_password` - Initial admin password
+- `network_name` - Existing VPC network name
+- `regions` - Map of regions with subnet names and zones
+- `pexip_images` - Management and conference node image configuration
 
-### Optional Variables
+### Node Configuration
 
-- `conference_nodes` - Map of conference node configurations
-- `network_tags` - Additional network tags
-- `labels` - Resource labels
+#### Management Node
+- Configurable machine type and disk
+- Service enable/disable flags for:
+  - SSH access
+  - Directory (LDAP) access
+  - SMTP access
+  - Syslog access
+- CIDR-based access control
+
+#### Transcoding Nodes
+- Multiple pool support
+- Region and zone placement
+- Configurable machine types
+- Public IP and static IP options
+- Protocol and service configuration
+
+#### Proxy Nodes (Optional)
+- Can be disabled by setting count = 0
+- Not recommended for cloud deployments
+- Only needed for specific network requirements
+
+### Security Features
+
+- SSH key management via Secret Manager
+- Firewall rules with CIDR-based access control
+- Service-specific access controls
+- Secure defaults with option to customize
+
+## File Structure
+
+```
+gcp/
+├── apis.tf           # API enablement
+├── conference_nodes.tf # Conferencing node configuration
+├── images.tf         # Image management
+├── locals.tf         # Local variables
+├── main.tf          # Main configuration
+├── management_node.tf # Management node configuration
+├── network.tf       # Network and firewall rules
+├── outputs.tf       # Output definitions
+├── ssh.tf          # SSH key management
+├── variables.tf    # Variable definitions
+└── versions.tf     # Version constraints
+```
+
+## Maintenance
+
+To modify your deployment:
+
+1. Update your terraform.tfvars file
+2. Run terraform plan to review changes
+3. Apply changes with terraform apply
+
+To destroy the deployment:
+```bash
+terraform destroy
+```
+
+## Support
+
+For issues and feature requests, please open an issue on GitHub.
