@@ -1,12 +1,13 @@
-🚧 Work in Progress: This project is under active development and only for community use. This is not and Official Pexip repo. 🚧
+🚧 Work in Progress 🚧
+This project is under active development and only for community use. This is not and official Pexip repo.
 
 # Pexip Infinity on Google Cloud Platform
 
-Infrastructure as Code templates for deploying Pexip Infinity video conferencing platform on Google Cloud Platform (GCP).
+Infrastructure as Code template for deploying Pexip Infinity video conferencing platform on Google Cloud Platform (GCP).
 
 ## Overview
 
-This repository provides Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure on GCP. The templates are designed to provide a flexible, secure, and maintainable deployment process following GCP best practices.
+This repository provides Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure on GCP. The templates are designed to provide a flexible easy-to-use experience for deploying and managing Pexip Infinity on GCP.
 
 ### Features
 
@@ -83,6 +84,43 @@ terraform apply
 - `transcoding_node_pools`: Transcoding node pool configurations
 
 See `terraform.tfvars.example` for a complete list of variables and their descriptions.
+
+## Development Setup
+
+### Pre-commit Hooks
+
+This repository uses pre-commit hooks to maintain code quality and consistency. The following hooks are configured:
+
+#### Standard Hooks
+- `check-merge-conflict`: Checks for merge conflict strings
+- `detect-private-key`: Checks for presence of private keys
+- `check-yaml`: Validates YAML files
+- `end-of-file-fixer`: Ensures files end with a newline
+- `trailing-whitespace`: Trims trailing whitespace
+
+#### Terraform-specific Hooks
+- `terraform_fmt`: Automatically formats Terraform code
+- `terraform_docs`: Updates Terraform documentation
+- `terraform_tflint`: Runs TFLint for additional Terraform checks
+
+To set up pre-commit:
+
+1. Install pre-commit:
+   ```bash
+   pip install pre-commit
+   ```
+
+2. Install the git hooks:
+   ```bash
+   pre-commit install
+   ```
+
+3. (Optional) Run against all files:
+   ```bash
+   pre-commit run --all-files
+   ```
+
+The hooks will run automatically on each commit, ensuring code quality standards are maintained.
 
 ## Security
 
