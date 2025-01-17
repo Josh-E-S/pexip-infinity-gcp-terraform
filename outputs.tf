@@ -167,10 +167,9 @@ output "images" {
 }
 
 # Connection Information Output
-output "connection_info" {
+output "z_connection_info" {
   description = "Instructions for connecting to your management node and performing initial configuration"
   value       = <<EOF
-Congratulations on your new Pexip Infinity deployment!
 
 SSH Connection Instructions for installation wizard:
 
@@ -181,7 +180,22 @@ SSH Connection Instructions for installation wizard:
    chmod 600 pexip_key
 
 3. Connect to management node:
-   ssh -i pexip_key admin@${try(google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip, "MANAGEMENT_NODE_IP")}
+   ssh -i pexip_key admin@${try(google_compute_address.mgmt_external_ip[0].address, "")}
+
+Web Interface URLs:
+
+Management Interface:
+https://${try(google_compute_address.mgmt_external_ip[0].address, "")}
+
+Transcoding Node URLs:
+%{for node_key, node in google_compute_instance.transcoding_nodes~}
+https://${try(node.network_interface[0].access_config[0].nat_ip, "")}
+%{endfor}
+
+Proxy Node URLs:
+%{for node_key, node in google_compute_instance.proxy_nodes~}
+https://${try(node.network_interface[0].access_config[0].nat_ip, "")}
+%{endfor}
 
 EOF
 }
