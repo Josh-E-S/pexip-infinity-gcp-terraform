@@ -1,3 +1,17 @@
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 4.0.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = ">= 4.0.0"
+    }
+  }
+}
+
 # Generate SSH key pair
 resource "tls_private_key" "ssh" {
   algorithm = "RSA"
@@ -6,7 +20,7 @@ resource "tls_private_key" "ssh" {
 
 # Store private key in Secret Manager
 resource "google_secret_manager_secret" "ssh_private_key" {
-  depends_on = [google_project_service.apis]
+  depends_on = [var.apis]
   secret_id  = "${var.project_id}-pexip-ssh-key"
 
   replication {

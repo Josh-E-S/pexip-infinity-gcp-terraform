@@ -1,3 +1,13 @@
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 4.0.0"
+    }
+  }
+}
+
 # =============================================================================
 # VPC Network
 # =============================================================================
@@ -9,7 +19,7 @@ data "google_compute_network" "network" {
 # Management Node Firewall Rules
 # =============================================================================
 resource "google_compute_firewall" "mgmt_admin" {
-  depends_on    = [google_project_service.apis]
+  depends_on    = [var.apis]
   name          = "allow-mgmt-admin"
   network       = data.google_compute_network.network.name
   description   = "Management node administrative access (Web UI)"
@@ -25,7 +35,7 @@ resource "google_compute_firewall" "mgmt_admin" {
 
 resource "google_compute_firewall" "mgmt_ssh" {
   count         = var.mgmt_node.services.ssh ? 1 : 0
-  depends_on    = [google_project_service.apis]
+  depends_on    = [var.apis]
   name          = "pexip-allow-mgmt-ssh"
   network       = data.google_compute_network.network.name
   description   = "Allow SSH access to management node"
@@ -41,7 +51,7 @@ resource "google_compute_firewall" "mgmt_ssh" {
 
 resource "google_compute_firewall" "mgmt_directory" {
   count         = var.mgmt_node.services.directory ? 1 : 0
-  depends_on    = [google_project_service.apis]
+  depends_on    = [var.apis]
   name          = "pexip-allow-mgmt-directory"
   network       = data.google_compute_network.network.name
   description   = "Allow directory service access to management node"
@@ -57,7 +67,7 @@ resource "google_compute_firewall" "mgmt_directory" {
 
 resource "google_compute_firewall" "mgmt_smtp" {
   count         = var.mgmt_node.services.smtp ? 1 : 0
-  depends_on    = [google_project_service.apis]
+  depends_on    = [var.apis]
   name          = "pexip-allow-mgmt-smtp"
   network       = data.google_compute_network.network.name
   description   = "Allow SMTP access to management node"
@@ -73,7 +83,7 @@ resource "google_compute_firewall" "mgmt_smtp" {
 
 resource "google_compute_firewall" "mgmt_syslog" {
   count         = var.mgmt_node.services.syslog ? 1 : 0
-  depends_on    = [google_project_service.apis]
+  depends_on    = [var.apis]
   name          = "pexip-allow-mgmt-syslog"
   network       = data.google_compute_network.network.name
   description   = "Allow Syslog access to management node"
@@ -93,12 +103,12 @@ resource "google_compute_firewall" "mgmt_syslog" {
 
 # Media Traffic for Transcoding Nodes
 resource "google_compute_firewall" "transcoding_media" {
-  depends_on    = [google_project_service.apis]
+  depends_on    = [var.apis]
   name          = "allow-transcoding-media"
   network       = data.google_compute_network.network.name
   description   = "Transcoding node media traffic"
   direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"] # Media traffic typically needs to be accessible from anywhere
+  source_ranges = ["0.0.0.0/0"]
   target_tags   = [var.transcoding_node_name]
 
   allow {
@@ -109,12 +119,12 @@ resource "google_compute_firewall" "transcoding_media" {
 
 # Media Traffic for Proxy Nodes
 resource "google_compute_firewall" "proxy_media" {
-  depends_on    = [google_project_service.apis]
+  depends_on    = [var.apis]
   name          = "allow-proxy-media"
   network       = data.google_compute_network.network.name
   description   = "Proxy node media traffic"
   direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"] # Media traffic typically needs to be accessible from anywhere
+  source_ranges = ["0.0.0.0/0"]
   target_tags   = [var.proxy_node_name]
 
   allow {
@@ -125,7 +135,7 @@ resource "google_compute_firewall" "proxy_media" {
 
 # Signaling Traffic for All Conference Nodes
 resource "google_compute_firewall" "signaling" {
-  depends_on    = [google_project_service.apis]
+  depends_on    = [var.apis]
   name          = "allow-signaling"
   network       = data.google_compute_network.network.name
   description   = "Conference node signaling traffic"
@@ -160,7 +170,7 @@ resource "google_compute_firewall" "signaling" {
 # Provisioning Access for Conferencing Nodes
 resource "google_compute_firewall" "pexip_allow_provisioning" {
   count         = var.conferencing_nodes_provisioning.services.provisioning ? 1 : 0
-  depends_on    = [google_project_service.apis]
+  depends_on    = [var.apis]
   name          = "pexip-allow-provisioning"
   network       = data.google_compute_network.network.name
   description   = "Allow access to conferencing node provisioning interface"
@@ -170,13 +180,13 @@ resource "google_compute_firewall" "pexip_allow_provisioning" {
 
   allow {
     protocol = "tcp"
-    ports    = ["8443"] # Provisioning bootstrap
+    ports    = ["8443"]
   }
 }
 
 # Internal Communication between Nodes
 resource "google_compute_firewall" "internal" {
-  depends_on  = [google_project_service.apis]
+  depends_on  = [var.apis]
   name        = "allow-internal"
   network     = data.google_compute_network.network.name
   description = "Internal communication between Pexip nodes"
@@ -186,13 +196,13 @@ resource "google_compute_firewall" "internal" {
 
   allow {
     protocol = "tcp"
-    ports    = ["443"] # Internal API
+    ports    = ["443"]
   }
 }
 
 # Optional Services for Transcoding Nodes
 resource "google_compute_firewall" "transcoding_services" {
-  depends_on    = [google_project_service.apis]
+  depends_on    = [var.apis]
   count         = var.transcoding_services.enable_services.one_touch_join || var.transcoding_services.enable_services.event_sink ? 1 : 0
   name          = "allow-transcoding-services"
   network       = data.google_compute_network.network.name

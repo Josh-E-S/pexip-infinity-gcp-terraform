@@ -1,201 +1,170 @@
 # =============================================================================
-# Validation Results
+# Infrastructure Information
 # =============================================================================
-
 output "infrastructure_info" {
-  description = "Infrastructure deployment information"
+  description = "Information about the infrastructure deployment"
   value = {
-    network = {
-      name = var.network_name
-      regions = {
-        for region, config in var.regions : region => {
-          subnet_name = config.subnet_name
-          zones       = config.zones
-        }
-      }
-    }
-    nodes = {
-      management = {
-        region = var.mgmt_node.region
-        zone   = var.mgmt_node.zone
-      }
-      transcoding = {
-        count   = length(local.transcoding_nodes)
-        regions = distinct([for name, node in local.transcoding_nodes : node.region])
-      }
-      proxy = {
-        count   = length(local.proxy_nodes)
-        regions = distinct([for name, node in local.proxy_nodes : node.region])
-      }
-    }
+    project_id = var.project_id
+    regions    = var.regions
     machine_types = {
-      management  = google_compute_instance.management_node.machine_type
-      transcoding = distinct([for name, node in local.transcoding_nodes : google_compute_instance.transcoding_nodes[name].machine_type])
-      proxy       = distinct([for name, node in local.proxy_nodes : google_compute_instance.proxy_nodes[name].machine_type])
+      management  = module.management.instance.machine_type
+      transcoding = [for instance in module.conference.transcoding_nodes : instance.machine_type]
+      proxy       = [for instance in module.conference.proxy_nodes : instance.machine_type]
     }
   }
 }
 
-# Management Node Outputs
+# =============================================================================
+# Management Node
+# =============================================================================
 output "management_node" {
-  description = "Management node details"
+  description = "Information about the management node"
   value = {
-    name         = google_compute_instance.management_node.name
-    internal_ip  = google_compute_instance.management_node.network_interface[0].network_ip
-    external_ip  = try(google_compute_instance.management_node.network_interface[0].access_config[0].nat_ip, null)
-    machine_type = google_compute_instance.management_node.machine_type
-    zone         = google_compute_instance.management_node.zone
-    region       = var.mgmt_node.region
+    name         = module.management.instance.name
+    internal_ip  = module.management.instance.network_interface[0].network_ip
+    external_ip  = try(module.management.instance.network_interface[0].access_config[0].nat_ip, null)
+    machine_type = module.management.instance.machine_type
+    zone         = module.management.instance.zone
   }
 }
 
-# Conference Node Outputs
+# =============================================================================
+# Conferencing Nodes
+# =============================================================================
 output "transcoding_nodes" {
-  description = "Transcoding conference node details"
+  description = "Information about transcoding nodes"
   value = {
-    for name, instance in google_compute_instance.transcoding_nodes : name => {
+    for name, instance in module.conference.transcoding_nodes : name => {
       name         = instance.name
       internal_ip  = instance.network_interface[0].network_ip
       external_ip  = try(instance.network_interface[0].access_config[0].nat_ip, null)
       machine_type = instance.machine_type
       zone         = instance.zone
-      region       = local.transcoding_nodes[name].region
-      disk_size    = local.transcoding_nodes[name].disk_size
-      disk_type    = local.transcoding_nodes[name].disk_type
-      public_ip    = local.transcoding_nodes[name].public_ip
-      static_ip    = local.transcoding_nodes[name].static_ip
+      region       = regex("^([a-z]+-[a-z]+[0-9]+)", instance.zone)[0]
     }
   }
 }
 
 output "proxy_nodes" {
-  description = "Proxy conference node details"
+  description = "Information about proxy nodes (if any)"
   value = {
-    for name, instance in google_compute_instance.proxy_nodes : name => {
+    for name, instance in module.conference.proxy_nodes : name => {
       name         = instance.name
       internal_ip  = instance.network_interface[0].network_ip
       external_ip  = try(instance.network_interface[0].access_config[0].nat_ip, null)
       machine_type = instance.machine_type
       zone         = instance.zone
-      region       = local.proxy_nodes[name].region
-      public_ip    = local.proxy_nodes[name].public_ip
-      static_ip    = local.proxy_nodes[name].static_ip
+      region       = regex("^([a-z]+-[a-z]+[0-9]+)", instance.zone)[0]
     }
   }
 }
 
-# Network Outputs
+# =============================================================================
+# Network Details
+# =============================================================================
 output "network_details" {
-  description = "Network and firewall rule details"
+  description = "Information about the network configuration"
   value = {
     network = {
-      name = data.google_compute_network.network.name
-      id   = data.google_compute_network.network.id
-    }
-    firewall_rules = {
-      management = {
-        admin_ui  = google_compute_firewall.mgmt_admin.name
-        ssh       = try(google_compute_firewall.mgmt_ssh[0].name, null)
-        directory = try(google_compute_firewall.mgmt_directory[0].name, null)
-        smtp      = try(google_compute_firewall.mgmt_smtp[0].name, null)
-        syslog    = try(google_compute_firewall.mgmt_syslog[0].name, null)
-      }
-      conferencing = {
-        provisioning = try(google_compute_firewall.pexip_allow_provisioning[0].name, null)
-        signaling    = google_compute_firewall.signaling.name
-        internal     = google_compute_firewall.internal.name
-      }
+      name = module.network.network.name
+      id   = module.network.network.id
     }
   }
 }
 
-# Summary Output
+# =============================================================================
+# Deployment Summary
+# =============================================================================
 output "deployment_summary" {
-  description = "Summary of the Pexip Infinity deployment"
+  description = "Summary of the deployment"
   value = {
-    project_id    = var.project_id
-    pexip_version = var.pexip_version
-
+    project_id = var.project_id
     nodes = {
       management = {
-        count         = 1
-        public_access = var.mgmt_node.public_ip
+        count  = 1
+        region = var.mgmt_node.region
       }
       transcoding = {
-        count   = length(local.transcoding_nodes)
-        regions = distinct([for name, node in local.transcoding_nodes : node.region])
+        count   = length(module.conference.transcoding_nodes)
+        regions = distinct([for name, node in module.conference.transcoding_nodes : regex("^([a-z]+-[a-z]+[0-9]+)", node.zone)[0]])
       }
       proxy = {
-        count   = length(local.proxy_nodes)
-        regions = distinct([for name, node in local.proxy_nodes : node.region])
+        count   = length(module.conference.proxy_nodes)
+        regions = distinct([for name, node in module.conference.proxy_nodes : regex("^([a-z]+-[a-z]+[0-9]+)", node.zone)[0]])
       }
     }
   }
 }
 
-# Storage Outputs
+# =============================================================================
+# Storage Information
+# =============================================================================
 output "storage_bucket" {
-  description = "Details of the GCS bucket used for storing Pexip images"
+  description = "Information about the storage bucket"
   value = {
-    name     = google_storage_bucket.pexip_images.name
-    location = google_storage_bucket.pexip_images.location
-    url      = google_storage_bucket.pexip_images.url
+    name     = module.images.storage_bucket.name
+    location = module.images.storage_bucket.location
+    url      = module.images.storage_bucket.url
   }
 }
 
-# SSH Key Outputs
-output "ssh_key_secret" {
-  description = "Name of the Secret Manager secret containing the SSH private key"
-  value       = google_secret_manager_secret.ssh_private_key.name
-  sensitive   = true
-}
-
-# Image Outputs
+# =============================================================================
+# Image Information
+# =============================================================================
 output "images" {
-  description = "Pexip Infinity image details"
+  description = "Information about the Pexip images"
   value = {
-    storage_bucket = google_storage_bucket.pexip_images.name
+    storage_bucket = module.images.storage_bucket.name
     management = {
-      name      = google_compute_image.mgmt_image.name
-      self_link = google_compute_image.mgmt_image.self_link
+      name      = module.images.mgmt_image.name
+      self_link = module.images.mgmt_image.self_link
     }
     conference = {
-      name      = google_compute_image.conf_image.name
-      self_link = google_compute_image.conf_image.self_link
+      name      = module.images.conf_image.name
+      self_link = module.images.conf_image.self_link
     }
   }
 }
 
-# Connection Information Output
+# =============================================================================
+# Connection Information
+# =============================================================================
 output "z_connection_info" {
-  description = "Instructions for connecting to your management node and performing initial configuration"
-  value       = <<EOF
+  description = "Connection information for the Pexip deployment"
+  value       = <<-EOT
+    ================================================================================
+    Download and Setup SSH Key:
+    --------------------------------------------------------------------------------
+    # Download the private key from Secret Manager
+    gcloud secrets versions access latest --secret="${var.project_id}-pexip-ssh-key" > pexip_key
 
-SSH Connection Instructions for installation wizard:
+    # Set correct permissions on the key file
+    chmod 600 pexip_key
 
-1. Get the private key from Secret Manager:
-   gcloud secrets versions access latest --secret="${var.project_id}-pexip-ssh-key" > pexip_key
+    ================================================================================
+    Management Node SSH Connection:
+    --------------------------------------------------------------------------------
+    ssh -i pexip_key admin@${try(module.management.instance.network_interface[0].access_config[0].nat_ip, "")}
 
-2. Set correct permissions on the key file:
-   chmod 600 pexip_key
+    ================================================================================
+    Management Node Web Interface:
+    --------------------------------------------------------------------------------
+    https://${try(module.management.instance.network_interface[0].access_config[0].nat_ip, "")}
 
-3. Connect to management node:
-   ssh -i pexip_key admin@${try(google_compute_address.mgmt_external_ip[0].address, "")}
+    ================================================================================
+    Transcoding Node IPs:
+    --------------------------------------------------------------------------------
+    %{for node_key, node in module.conference.transcoding_nodes~}
+    ${node.name}: ${try(node.network_interface[0].access_config[0].nat_ip, "No public IP")}
+    %{endfor~}
 
-Web Interface URLs:
-
-Management Interface:
-https://${try(google_compute_address.mgmt_external_ip[0].address, "")}
-
-Transcoding Node URLs:
-%{for node_key, node in google_compute_instance.transcoding_nodes~}
-https://${try(node.network_interface[0].access_config[0].nat_ip, "")}
-%{endfor}
-
-Proxy Node URLs:
-%{for node_key, node in google_compute_instance.proxy_nodes~}
-https://${try(node.network_interface[0].access_config[0].nat_ip, "")}
-%{endfor}
-
-EOF
+    %{if length(module.conference.proxy_nodes) > 0~}
+    ================================================================================
+    Proxy Node IPs:
+    --------------------------------------------------------------------------------
+    %{for node_key, node in module.conference.proxy_nodes~}
+    ${node.name}: ${try(node.network_interface[0].access_config[0].nat_ip, "No public IP")}
+    %{endfor~}
+    %{endif~}
+    EOT
 }

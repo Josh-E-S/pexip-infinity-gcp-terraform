@@ -1,3 +1,13 @@
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 4.0.0"
+    }
+  }
+}
+
 # =============================================================================
 # Storage Bucket for Pexip Images
 # =============================================================================
@@ -6,7 +16,7 @@ resource "google_storage_bucket" "pexip_images" {
   location                    = keys(var.regions)[0] # Use first region
   force_destroy               = true
   uniform_bucket_level_access = true
-  depends_on                  = [google_project_service.apis]
+  depends_on                  = [var.apis]
 
   labels = {
     managed-by = "terraform"
@@ -28,7 +38,6 @@ resource "google_storage_bucket_object" "mgmt_image" {
   timeouts {
     create = "60m"
   }
-
 }
 
 # Create or reference Management Node image
