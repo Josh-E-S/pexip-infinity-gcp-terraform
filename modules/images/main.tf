@@ -31,8 +31,9 @@ resource "google_storage_bucket" "pexip_images" {
 
 # Upload Management Node image to Cloud Storage if needed
 resource "google_storage_bucket_object" "mgmt_image" {
+  count  = var.pexip_images.upload_files ? 1 : 0
   name   = "pexip-infinity-mgmt-${var.pexip_version}.tar.gz"
-  source = var.pexip_images.upload_files ? var.pexip_images.management.source_file : null
+  source = var.pexip_images.management.source_file
   bucket = google_storage_bucket.pexip_images.name
 
   timeouts {
@@ -40,18 +41,21 @@ resource "google_storage_bucket_object" "mgmt_image" {
   }
 }
 
-# Create or reference Management Node image
+# Data source for existing Management Node image
+data "google_compute_image" "mgmt_image" {
+  count   = var.pexip_images.upload_files ? 0 : 1
+  name    = var.pexip_images.management.image_name
+  project = var.project_id
+}
+
+# Create Management Node image when uploading files
 resource "google_compute_image" "mgmt_image" {
-  name = var.pexip_images.management.image_name
+  count = var.pexip_images.upload_files ? 1 : 0
+  name  = var.pexip_images.management.image_name
 
-  dynamic "raw_disk" {
-    for_each = var.pexip_images.upload_files ? [1] : []
-    content {
-      source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.mgmt_image.name}"
-    }
+  raw_disk {
+    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.mgmt_image[0].name}"
   }
-
-  source_image = var.pexip_images.upload_files ? null : var.pexip_images.management.image_name
 
   labels = {
     managed-by = "terraform"
@@ -72,8 +76,9 @@ resource "google_compute_image" "mgmt_image" {
 
 # Upload Conference Node image to Cloud Storage if needed
 resource "google_storage_bucket_object" "conference_image" {
+  count  = var.pexip_images.upload_files ? 1 : 0
   name   = "pexip-infinity-conf-${var.pexip_version}.tar.gz"
-  source = var.pexip_images.upload_files ? var.pexip_images.conference.source_file : null
+  source = var.pexip_images.conference.source_file
   bucket = google_storage_bucket.pexip_images.name
 
   timeouts {
@@ -81,18 +86,21 @@ resource "google_storage_bucket_object" "conference_image" {
   }
 }
 
-# Create or reference Conference Node image
+# Data source for existing Conference Node image
+data "google_compute_image" "conf_image" {
+  count   = var.pexip_images.upload_files ? 0 : 1
+  name    = var.pexip_images.conference.image_name
+  project = var.project_id
+}
+
+# Create Conference Node image when uploading files
 resource "google_compute_image" "conf_image" {
-  name = var.pexip_images.conference.image_name
+  count = var.pexip_images.upload_files ? 1 : 0
+  name  = var.pexip_images.conference.image_name
 
-  dynamic "raw_disk" {
-    for_each = var.pexip_images.upload_files ? [1] : []
-    content {
-      source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.conference_image.name}"
-    }
+  raw_disk {
+    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.conference_image[0].name}"
   }
-
-  source_image = var.pexip_images.upload_files ? null : var.pexip_images.conference.image_name
 
   labels = {
     managed-by = "terraform"
