@@ -12,28 +12,29 @@ This repository provides Terraform templates for deploying and managing Pexip In
 
 ### Features
 
-- Multi-region transcoding node support by use of "pool" concept
-- Optional proxy node deployment also by use of "pool" concept
-- Customizable instance configurations
+- Multi-region transcoding node support with region-specific naming (e.g., node-central, node-east)
+- Optional proxy node deployment with flexible naming
+- Customizable instance configurations (machine types, disk sizes)
 - Flexible image management:
-  - Use existing images from your GCP bucket
+  - Use existing images from your GCP project
   - Automatically upload and create images from local files
 
 ## Repository Structure
 
 ```
 .
-├── apis.tf              # GCP API enablement
-├── conference_nodes.tf  # Transcoding and proxy node configuration
-├── images.tf           # Pexip image management
-├── locals.tf          # Local variables and computed values
-├── main.tf            # Core infrastructure configuration
-├── management_node.tf # Management node configuration
-├── network.tf         # Networking and firewall rules
-├── outputs.tf         # Output definitions
-├── ssh.tf            # SSH key management
+├── main.tf           # Root configuration and module calls
 ├── variables.tf      # Input variable definitions
-└── versions.tf       # Provider and version constraints
+├── outputs.tf        # Output definitions
+├── versions.tf       # Provider and version constraints
+├── modules/         # Modular components
+│   ├── apis/        # GCP API enablement
+│   ├── conference/  # Transcoding and proxy node configuration
+│   ├── images/      # Pexip image management
+│   ├── management/  # Management node configuration
+│   ├── network/     # Networking and firewall rules
+│   └── ssh/         # SSH key management
+└── terraform.tfvars.example  # Example configuration file
 ```
 
 ## Prerequisites
@@ -41,12 +42,12 @@ This repository provides Terraform templates for deploying and managing Pexip In
 ### Required for Deployment
 1. Terraform >= 1.0.0
 2. GCP Project with:
-   - Required APIs enabled. This module will attempt to enable them.
+   - Required APIs enabled (this module will attempt to enable them)
    - Service Account with necessary permissions
-3. VPC Network and subnets already created
+3. VPC Network and subnets already created in your target regions
 4. Pexip Infinity Management and Conference node images. These can be downloaded from https://www.pexip.com/help-center/platform-download
-   - Option 1: Images already uploaded to a GCP bucket
-   - Option 2: Local image files that the template will upload to a new or existing bucket
+   - Option 1: Images already uploaded to your GCP project
+   - Option 2: Local .tgz files that the template will upload to a new bucket and create images
 
 ### Optional Development Tools
 If you plan to contribute to this project, we use the following tools to maintain code quality:
@@ -71,22 +72,66 @@ cp terraform.tfvars.example terraform.tfvars
 
 3. Configure your deployment in terraform.tfvars:
    - Set your GCP project ID and network name
-   - Configure regions and zones
-   - Set image configuration:
+   - Configure regions and subnets:
      ```hcl
-     pexip_images = {
-       management = {
-         # Option 1: Use existing GCP image
-         name = "existing-management-image"
-         # OR Option 2: Specify local file to upload
-         source_file = "/path/to/pexip-infinity-management-node.qcow2"
+     regions = {
+       "us-central1" = {
+         subnet_name = "subnet-central"  # Must exist in your VPC
+         zones       = ["us-central1-a", "us-central1-b"]
        }
-       conference = {
-         # Similar options for conference node image
+       "us-east1" = {
+         subnet_name = "subnet-east"     # Must exist in your VPC
+         zones       = ["us-east1-b", "us-east1-c"]
+       }
+       "australia-southeast1" = {
+         subnet_name = "subnet-australia" # Must exist in your VPC
+         zones       = ["australia-southeast1-a", "australia-southeast1-b"]
        }
      }
      ```
-   - Configure node pools and services
+   - Set image configuration:
+     ```hcl
+     pexip_images = {
+       upload_files = false  # Set to true to upload local files
+       management = {
+         image_name = "pexip-infinity-mgmt-36-manual"  # Use existing image
+       }
+       conference = {
+         image_name = "pexip-infinity-conf-36-manual"  # Use existing image
+       }
+     }
+     ```
+   - Configure transcoding and proxy nodes:
+     ```hcl
+     # Example transcoding node configuration
+     transcoding_node_pools = {
+       node-central = {
+         machine_type = "n2-standard-2"
+         disk_size    = 50
+         region       = "us-central1"
+         zone         = "us-central1-a"
+         count        = 1
+       }
+       node-east = {
+         machine_type = "n2-standard-2"
+         disk_size    = 50
+         region       = "us-east1"
+         zone         = "us-east1-b"
+         count        = 1
+       }
+     }
+
+     # Example proxy node configuration
+     proxy_node_pools = {
+       node = {
+         machine_type = "n2-standard-1"
+         disk_size    = 50
+         region       = "us-central1"
+         zone         = "us-central1-a"
+         count        = 1
+       }
+     }
+     ```
 
 4. Initialize and apply:
 ```bash
