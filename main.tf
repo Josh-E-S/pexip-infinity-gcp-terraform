@@ -79,15 +79,19 @@ resource "null_resource" "precondition_checks" {
     }
 
     # Pool Configuration Checks
-    #precondition {
-    #condition = alltrue([
-    #for pool in var.transcoding_node_pools : (
-    #pool.count > 0 &&
-    #(pool.disk_size == null || pool.disk_size >= 50)
-    #)
-    #])
-    #error_message = "Transcoding node pools must have count > 0 and disk_size >= 50 if specified"
-    #}
+    precondition {
+      condition = alltrue(flatten([
+        # Check transcoding nodes
+        [for pool in var.transcoding_node_pools :
+          pool.count == 0 || (pool.disk_size >= 50)
+        ],
+        # Check proxy nodes
+        [for pool in var.proxy_node_pools :
+          pool.count == 0 || (pool.disk_size >= 50)
+        ]
+      ]))
+      error_message = "When deploying nodes (count > 0), disk size must be >= 50GB"
+    }
   }
 }
 

@@ -101,10 +101,10 @@ variable "mgmt_node" {
 }
 
 # =============================================================================
-# Node Pool Variables
+# Transcoding and Proxy Node Variables
 # =============================================================================
 variable "transcoding_node_pools" {
-  description = "Transcoding node pool configurations. Machine type can vary between pools."
+  description = "Transcoding node configurations. Machine type can vary between pools."
   type = map(object({
     machine_type = string
     disk_size    = number
@@ -115,10 +115,22 @@ variable "transcoding_node_pools" {
     public_ip    = bool
     static_ip    = optional(bool, true)
   }))
+  default = {
+    node = {
+      machine_type = "n2-standard-4"
+      disk_size    = 50
+      disk_type    = "pd-standard"
+      region       = "us-central1"
+      zone         = "us-central1-a"
+      count        = 1 # Default to one transcoding node
+      public_ip    = true
+      static_ip    = true
+    }
+  }
 }
 
 variable "proxy_node_pools" {
-  description = "Proxy node pool configurations. All pools use n2-standard-4."
+  description = "Proxy node configurations. All pools use n2-standard-4. Default count is 0 - set count > 0 to deploy proxy nodes."
   type = map(object({
     region    = string
     zone      = string
@@ -126,6 +138,15 @@ variable "proxy_node_pools" {
     public_ip = bool
     static_ip = optional(bool, true)
   }))
+  default = {
+    node = {
+      region    = "us-central1"
+      zone      = "us-central1-a"
+      count     = 0 # Default to 0 proxy nodes
+      public_ip = true
+      static_ip = true
+    }
+  }
 }
 
 # =============================================================================
@@ -306,7 +327,7 @@ variable "proxy_services" {
 }
 
 variable "conferencing_nodes_provisioning" {
-  description = "Conferencing nodes shared provisioning configuration"
+  description = "Conferencing nodes shared provisioning configuration. Controls SSH access and provisioning interface (port 8443) settings."
   type = object({
     services = object({
       ssh          = bool
@@ -316,6 +337,15 @@ variable "conferencing_nodes_provisioning" {
       provisioning = list(string)
     })
   })
+  default = {
+    services = {
+      ssh          = true
+      provisioning = true
+    }
+    allowed_cidrs = {
+      provisioning = ["0.0.0.0/0"] # Can be restricted by user if needed
+    }
+  }
 
   validation {
     condition = alltrue([
@@ -334,7 +364,7 @@ variable "pexip_version" {
 }
 
 variable "pexip_images" {
-  description = "Pexip Infinity image configurations. Set upload_files=true to upload and create images, or false to use existing images"
+  description = "Pexip Infinity image configurations. Set upload_files=true to upload and create images, or false to use existing images and bucket."
   type = object({
     upload_files = bool
     management = object({

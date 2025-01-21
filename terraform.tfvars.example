@@ -152,50 +152,50 @@ conferencing_nodes_provisioning = {
 }
 
 # =============================================================================
-# Transcoding Node Pool Configuration
+# Transcoding Node Configuration
 # =============================================================================
 # Transcoding nodes handle the media processing for all conferences
 # They can also handle media forwarding and this is the reccomended setup for cloud deployments
 # You can create multiple pools in different regions/zones for redundancy.
 # They can also have different machine sizes based on the capacity required.
 transcoding_node_pools = {
-  node-central = {  # This is the node or pool name, can be changed (e.g., "pool-central1", "node", etc.)
+  node = {  # This is the node name, matches the default in variables.tf
     machine_type = "n2-standard-4"
     disk_size    = 50
     disk_type    = "pd-standard"
     region       = "us-central1"
     zone         = "us-central1-a"
-    count        = 1        # Number of nodes in this pool. Will be added to the final node name
+    count        = 1        # Number of nodes. Will be added to the final node name
     public_ip    = true     # Assign public IP
     static_ip    = true     # Use static IP
   }
 }
 
-# Example of multiple transcoding pools:
+# Example of multiple transcoding nodes:
 # transcoding_node_pools = {
-#   node-central = {
+#   node-us-central = {
 #     machine_type = "n2-standard-4"
 #     disk_size    = 50
 #     region       = "us-central1"
 #     zone         = "us-central1-a"
-#     count        = 2        # Number of nodes in this pool. Will be added to the final node name
+#     count        = 2
 #   }
-#   node-east = {
+#   node-us-east = {
 #     machine_type = "n2-standard-4"
 #     disk_size    = 50
 #     region       = "us-east1"
 #     zone         = "us-east1-b"
-#     count        = 2        # Number of nodes in this pool. Will be added to the final node name
+#     count        = 2
 #   }
 # }
 
 # =============================================================================
-# Proxy Node Pool Configuration
+# Proxy Node Configuration
 # =============================================================================
 # Proxy nodes are optional and NOT recommended for cloud deployments since
 # transcoding nodes can have a public 1:1 NAT and handle all functions.
 #
-# To deploy WITHOUT proxy nodes, simply set count = 0 or remove this block entirely.
+# To deploy WITHOUT proxy nodes, simply set count = 0 (default)
 #
 # Only deploy proxy nodes if specifically required by your architecture.
 # Example use cases:

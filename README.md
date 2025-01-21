@@ -1,10 +1,8 @@
-# 🚧 Work in Progress 🚧
+# This project is for community use. This is not an official Pexip repo.
 
-This project is under active development and only for community use. This is not an official Pexip repo.
+# Pexip Infinity on GCP using Terraform
 
-# Pexip Infinity on Google Cloud Platform using Terrraform
-
-Terraform module for deploying Pexip Infinity video conferencing platform on Google Cloud Platform (GCP). This Module will deploy the Pexip infrastructure, but still requires configuration after deployment.
+Terraform module for deploying Pexip Infinity video conferencing platform on GCP. This Module will deploy the Pexip infrastructure, but still requires configuration after deployment.
 
 ## Overview
 
@@ -15,9 +13,7 @@ This repository provides Terraform templates for deploying and managing Pexip In
 - Multi-region transcoding node support with region-specific naming (e.g., node-central, node-east)
 - Optional proxy node deployment with flexible naming
 - Customizable instance configurations (machine types, disk sizes)
-- Flexible image management:
-  - Use existing images from your GCP project
-  - Automatically upload and create images from local files
+- Flexible image management with support for both local files and existing images
 
 ## Repository Structure
 
@@ -61,8 +57,8 @@ See the Development Setup section for installation instructions.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Josh-E-S/pexip-infinity-gcp-terraform.git
-cd pexip-infinity-gcp-terraform
+git clone https://github.com/Josh-E-S/terraform-gcp-pexip-infinity.git
+cd terraform-gcp-pexip-infinity
 ```
 
 2. Copy and modify the example variables file:
@@ -138,6 +134,54 @@ cp terraform.tfvars.example terraform.tfvars
 terraform init
 terraform plan
 terraform apply
+```
+
+## Image Configuration
+
+This module supports two methods for deploying Pexip Infinity images:
+
+1. **Upload Local Files** (First-time deployment):
+   - Set `upload_files = true` in your tfvars file
+   - Provide paths to your local Pexip Infinity image files:
+     - Management Node: `management.source_file`
+     - Conference Node: `conference.source_file`
+   - The module will:
+     - Create a GCS bucket in your project
+     - Upload the images to the bucket
+     - Create GCE images from the uploaded files
+
+2. **Use Existing Images**:
+   - Set `upload_files = false` in your tfvars file
+   - Specify the names of existing images in your project:
+     - Management Node: `management.image_name`
+     - Conference Node: `conference.image_name`
+   - The module will use these pre-existing images
+
+Example configuration:
+```hcl
+# Option 1: Upload local files
+pexip_images = {
+  upload_files = true
+  management = {
+    source_file = "/path/to/files/Pexip_Infinity_v36_GCP_pxMgr.tar.gz"
+    image_name  = "pexip-infinity-mgmt-36"
+  }
+  conference = {
+    source_file = "/path/to/files/Pexip_Infinity_v36_GCP_pxConf.tar.gz"
+    image_name  = "pexip-infinity-conf-36"
+  }
+}
+
+# Option 2: Use existing images
+pexip_images = {
+  upload_files = false
+  management = {
+    image_name = "pexip-infinity-mgmt-36"
+  }
+  conference = {
+    image_name = "pexip-infinity-conf-36"
+  }
+}
 ```
 
 ## Configuration
