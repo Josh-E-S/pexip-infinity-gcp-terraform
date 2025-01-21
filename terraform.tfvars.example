@@ -23,7 +23,7 @@ network_name = "pexip-infinity-vpc"
 # Example for single region:
 regions = {
   "us-central1" = {
-    subnet_name = "subnet-1"  # Must already exist in the VPC
+    subnet_name = "subnet-central"  # Must already exist in the VPC
     zones       = ["us-central1-a", "us-central1-b", "us-central1-c"]
   }
 }
@@ -78,7 +78,7 @@ proxy_node_name      = "pexip-proxy"
 # This is used for naming and tagging resources
 pexip_version = "36"
 
-# Example 1: Upload local files and create images (typical first-time deployment)
+# Example 1: Terraform will upload local files and create images (typical first-time deployment)
 # Files can be downloaded from https://www.pexip.com/help-center/platform-download
 pexip_images = {
   upload_files = true
@@ -154,12 +154,12 @@ conferencing_nodes_provisioning = {
 # =============================================================================
 # Transcoding Node Pool Configuration
 # =============================================================================
-# Transcoding nodes handle the media processing for conferences
+# Transcoding nodes handle the media processing for all conferences
 # They can also handle media forwarding and this is the reccomended setup for cloud deployments
 # You can create multiple pools in different regions/zones for redundancy.
 # They can also have different machine sizes based on the capacity required.
 transcoding_node_pools = {
-  pool-central = {  # This is the node or pool name, can be changed (e.g., "pool-central1", "node", etc.)
+  node-central = {  # This is the node or pool name, can be changed (e.g., "pool-central1", "node", etc.)
     machine_type = "n2-standard-4"
     disk_size    = 50
     disk_type    = "pd-standard"
@@ -173,14 +173,14 @@ transcoding_node_pools = {
 
 # Example of multiple transcoding pools:
 # transcoding_node_pools = {
-#   pool-central = {
+#   node-central = {
 #     machine_type = "n2-standard-4"
 #     disk_size    = 50
 #     region       = "us-central1"
 #     zone         = "us-central1-a"
 #     count        = 2        # Number of nodes in this pool. Will be added to the final node name
 #   }
-#   pool-east = {
+#   node-east = {
 #     machine_type = "n2-standard-4"
 #     disk_size    = 50
 #     region       = "us-east1"
