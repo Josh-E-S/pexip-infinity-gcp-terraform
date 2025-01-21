@@ -149,13 +149,13 @@ output "z_connection_info" {
     ================================================================================
     Management Node Web Interface:
     --------------------------------------------------------------------------------
-    https://${try(module.management.instance.network_interface[0].access_config[0].nat_ip, "")}
+    https://${try(module.management.instance.network_interface[0].access_config[0].nat_ip, "")} #Inital Installer must be run before the web interface can be accessed
 
     ================================================================================
     Transcoding Node IPs:
     --------------------------------------------------------------------------------
     %{for node_key, node in module.conference.transcoding_nodes~}
-    ${node.name}: ${try(node.network_interface[0].access_config[0].nat_ip, "No public IP")}
+    ${node.name}: https://${try(node.network_interface[0].access_config[0].nat_ip, "No public IP")}:8443 #Inital setup
     %{endfor~}
 
     %{if length(module.conference.proxy_nodes) > 0~}
@@ -163,7 +163,7 @@ output "z_connection_info" {
     Proxy Node IPs:
     --------------------------------------------------------------------------------
     %{for node_key, node in module.conference.proxy_nodes~}
-    ${node.name}: ${try(node.network_interface[0].access_config[0].nat_ip, "No public IP")}
+    ${node.name}: https://${try(node.network_interface[0].access_config[0].nat_ip, "No public IP")}:8443 #Inital setup
     %{endfor~}
     %{endif~}
     EOT
