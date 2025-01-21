@@ -2,9 +2,9 @@
 
 This project is under active development and only for community use. This is not an official Pexip repo.
 
-# Pexip Infinity on Google Cloud Platform
+# Pexip Infinity on Google Cloud Platform using Terrraform
 
-Infrastructure as Code template for deploying Pexip Infinity video conferencing platform on Google Cloud Platform (GCP). This template will deploy the Pexip infrastructure, but still requires configuration after deployment.
+Terraform module for deploying Pexip Infinity video conferencing platform on Google Cloud Platform (GCP). This Module will deploy the Pexip infrastructure, but still requires configuration after deployment.
 
 ## Overview
 
