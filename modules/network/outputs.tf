@@ -4,7 +4,7 @@
 
 output "network" {
   description = "Network configuration"
-  value = data.google_compute_network.existing[0]
+  value       = data.google_compute_network.existing[0]
 }
 
 output "subnets" {

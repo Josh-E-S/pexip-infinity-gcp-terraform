@@ -15,12 +15,12 @@ output "instances" {
 
 output "internal_ips" {
   description = "List of internal IP addresses"
-  value = google_compute_address.internal_ip[*].address
+  value       = google_compute_address.internal_ip[*].address
 }
 
 output "external_ips" {
   description = "List of external IP addresses (if public IP is enabled)"
-  value = var.public_ip ? google_compute_address.external_ip[*].address : []
+  value       = var.public_ip ? google_compute_address.external_ip[*].address : []
 }
 
 output "instance_count" {
@@ -35,18 +35,18 @@ output "node_type" {
 
 output "names" {
   description = "Names of the created instances"
-  value = google_compute_instance.node[*].name
+  value       = google_compute_instance.node[*].name
 }
 
 output "public_ips" {
   description = "Public IPs of the created instances"
   value = [
-    for i in range(local.instance_count) : 
+    for i in range(local.instance_count) :
     var.public_ip ? google_compute_address.external_ip[i].address : null
   ]
 }
 
 output "private_ips" {
   description = "Private IPs of the created instances"
-  value = google_compute_address.internal_ip[*].address
+  value       = google_compute_address.internal_ip[*].address
 }

@@ -24,12 +24,12 @@ variable "images" {
   type = object({
     upload_files = bool
     management = object({
-      source_file = optional(string)  # Required if upload_files = true
-      image_name  = string            # Required if upload_files = false
+      source_file = optional(string) # Required if upload_files = true
+      image_name  = string           # Required if upload_files = false
     })
     conferencing = object({
-      source_file = optional(string)  # Required if upload_files = true
-      image_name  = string            # Required if upload_files = false
+      source_file = optional(string) # Required if upload_files = true
+      image_name  = string           # Required if upload_files = false
     })
   })
 }

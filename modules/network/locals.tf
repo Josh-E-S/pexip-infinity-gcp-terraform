@@ -1,104 +1,95 @@
 locals {
-  # Firewall rule names
+  # Common prefixes and tags
   firewall_prefix = "pexip-infinity"
-  
-  # Management ports
-  mgmt_ports = {
-    ssh          = "22"
-    provisioning = "8443"
-    teams_hub    = "40000-49999"
-    dns          = "53"
-    ntp          = "123"
-    syslog       = "514"
-    smtp         = "587"
-    ldap         = "389,636"
-  }
-
-  # Service ports
-  service_ports = {
-    media  = "33000-39999"
-    sip    = "5060-5061"
-    h323   = "1720,1719"
-    teams  = "40000-49999"
-    gmeet  = "19302-19309"
-  }
-
-  # Node type tags
   tags = {
     management  = "pexip-mgmt"
     transcoding = "pexip-transcoding"
     proxy       = "pexip-proxy"
   }
 
-  # All the port configurations stay the same but organized by service
-  ports = {
-    # Media ports (shared by all conferencing nodes)
-    media = {
-      start = 40000
-      end   = 49999
-    }
+  # Default ranges
+  default_ranges = ["0.0.0.0/0"]
 
-    # Management node services
+  # Port configurations by service type
+  ports = {
+    # Management access (inbound only, requires CIDR config)
     management = {
       admin = {
-        tcp = ["443"]          # Web admin interface
+        description = "Management node administrative access"
+        tcp = ["443"]
       }
       ssh = {
-        tcp = ["22"]           # SSH access
+        description = "Management node and conferencing nodes SSH access"
+        tcp = ["22"]
       }
-      provisioning = {
-        tcp = ["8443"]         # Conferencing node provisioning
-      }
-      teams_hub = {
-        tcp = ["5671"]         # Teams Connector Azure Event Hub (AMQPS)
-      }
-      dns = {
-        tcp = ["53"]           # DNS over TCP
-        udp = ["53"]           # DNS queries
-      }
-      ntp = {
-        udp = ["123"]          # NTP time sync
-      }
-      syslog = {
-        udp = ["514"]          # Syslog messages
-      }
-      smtp = {
-        tcp = ["587"]          # SMTP mail
-      }
-      ldap = {
-        tcp = ["389", "636"]   # LDAP and LDAPS
+      conf_provisioning = {
+        description = "Conferencing node provisioning"
+        tcp = ["8443"]
       }
     }
 
-    # Conferencing node services
+    # Call services (inbound/outbound, always 0.0.0.0/0)
     conferencing = {
-      # SIP signaling
       sip = {
+        description = "SIP signaling"
         tcp = ["5060", "5061"]  # SIP and SIP/TLS
         udp = ["5060"]          # SIP UDP
       }
-
-      # H.323 signaling
       h323 = {
+        description = "H.323 signaling"
         tcp = ["1720", "33000-39999"]  # H.323/H.245
         udp = ["1719"]                 # H.323 RAS
       }
-
-      # Platform integrations
       teams = {
-        tcp = ["443"]          # Teams signaling
-        udp = ["50000-54999"]  # Teams Media to VM scaleset instance SRTP/SRTCP
+        description = "Microsoft Teams integration"
+        tcp = ["443"]           # Teams signaling
+        udp = ["50000-54999"]  # Teams media
       }
       gmeet = {
-        tcp = ["443"]          # Google Meet signaling
+        description = "Google Meet integration"
+        tcp = ["443"]           # Meet signaling
         udp = ["19302-19309"]  # SRTP/SRTCP
+      }
+    }
+
+    # Core services (outbound only, always enabled)
+    core = {
+      dns = {
+        description = "DNS queries"
+        tcp = ["53"]
+        udp = ["53"]
+      }
+      ntp = {
+        description = "NTP time sync"
+        udp = ["123"]
+      }
+    }
+
+    # Optional services (outbound only)
+    optional = {
+      teams_hub = {
+        description = "Teams Connector Azure Event Hub (AMQPS)"
+        tcp = ["5671"]
+      }
+      syslog = {
+        description = "Syslog messages"
+        udp = ["514"]
+      }
+      smtp = {
+        description = "SMTP mail"
+        tcp = ["587"]
+      }
+      ldap = {
+        description = "LDAP directory services"
+        tcp = ["389", "636"]  # LDAP and LDAPS
       }
     }
 
     # Internal communication between nodes
     internal = {
-      udp = ["500"]           # ISAKMP (IPsec)
-      protocols = ["esp"]     # IPsec ESP (IP Protocol 50)
+      description = "Internal communication between nodes"
+      udp = ["500"]        # ISAKMP (IPsec)
+      protocols = ["esp"]  # ESP (IP Protocol 50)
     }
   }
 }

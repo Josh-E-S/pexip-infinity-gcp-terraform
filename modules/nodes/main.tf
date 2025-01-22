@@ -1,3 +1,17 @@
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 4.0.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = ">= 4.0.0"
+    }
+  }
+}
+
 # =============================================================================
 # Node IP Addresses
 # =============================================================================
@@ -17,7 +31,7 @@ resource "google_compute_address" "external_ip" {
   count        = var.public_ip ? local.instance_count : 0
   name         = local.instance_count > 1 ? "${var.name}-external-${count.index + 1}" : "${var.name}-external"
   region       = var.region
-  network_tier = "PREMIUM"  # Always use premium for better performance
+  network_tier = "PREMIUM" # Always use premium for better performance
 }
 
 # =============================================================================
@@ -26,11 +40,11 @@ resource "google_compute_address" "external_ip" {
 
 # Create instances based on type and quantity
 resource "google_compute_instance" "node" {
-  count       = local.instance_count
-  depends_on  = [var.apis]
-  name        = local.instance_count > 1 ? "${var.name}-${count.index + 1}" : var.name
+  count        = local.instance_count
+  depends_on   = [var.apis]
+  name         = local.instance_count > 1 ? "${var.name}-${count.index + 1}" : var.name
   machine_type = local.machine_type
-  zone        = "${var.region}-b"  # Default to zone b
+  zone         = "${var.region}-b" # Default to zone b
 
   tags = local.network_tags
 

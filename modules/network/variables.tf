@@ -3,76 +3,70 @@
 # =============================================================================
 
 variable "project_id" {
-  description = "The GCP project ID"
+  description = "GCP project ID"
   type        = string
 }
 
+# Network Configuration
 variable "network_name" {
-  description = "Name of existing VPC network"
+  description = "Name of the VPC network to use"
   type        = string
-}
-
-variable "use_existing" {
-  description = "Whether to use an existing network"
-  type        = bool
 }
 
 variable "regions" {
-  description = "Map of regions to subnet configurations"
+  description = "Map of regions and their subnet configurations"
   type = map(object({
     subnet_name = string
   }))
 }
 
-# =============================================================================
-# Security Configuration
-# =============================================================================
-
+# Management Access Configuration
 variable "management_access" {
-  description = "Management node access configuration"
+  description = "CIDR ranges for management access (admin UI, SSH, provisioning)"
   type = object({
-    enable_ssh          = bool
-    enable_provisioning = bool
-    cidr_ranges         = list(string)
+    cidr_ranges = list(string)
   })
   default = {
-    enable_ssh          = true
-    enable_provisioning = true
-    cidr_ranges         = ["0.0.0.0/0"]
+    cidr_ranges = ["0.0.0.0/0"]
   }
 }
 
+# Service Configuration
 variable "services" {
-  description = "Service configuration"
+  description = "Service configuration toggles"
   type = object({
+    # Management services
+    enable_ssh               = bool
+    enable_conf_provisioning = bool
+
+    # Call services (inbound)
     enable_sip   = bool
     enable_h323  = bool
     enable_teams = bool
     enable_gmeet = bool
+
+    # Optional services
+    enable_teams_hub = bool
+    enable_syslog    = bool
+    enable_smtp      = bool
+    enable_ldap      = bool
   })
   default = {
+    # Management services default to enabled
+    enable_ssh               = true
+    enable_conf_provisioning = true
+
+    # Call services default to enabled
     enable_sip   = true
     enable_h323  = true
     enable_teams = true
     enable_gmeet = true
-  }
-}
 
-variable "service_ranges" {
-  description = "CIDR ranges for service access"
-  type = object({
-    dns    = list(string)
-    ntp    = list(string)
-    syslog = list(string)
-    smtp   = list(string)
-    ldap   = list(string)
-  })
-  default = {
-    dns    = ["0.0.0.0/0"]
-    ntp    = ["0.0.0.0/0"]
-    syslog = ["0.0.0.0/0"]
-    smtp   = ["0.0.0.0/0"]
-    ldap   = ["0.0.0.0/0"]
+    # Optional services default to disabled
+    enable_teams_hub = false
+    enable_syslog    = false
+    enable_smtp      = false
+    enable_ldap      = false
   }
 }
 

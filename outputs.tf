@@ -33,7 +33,7 @@ output "bucket" {
 # =============================================================================
 output "management_node" {
   description = "Management node details"
-  value = module.management_node.instances
+  value       = module.management_node.instances
 }
 
 output "transcoding_nodes" {
@@ -55,7 +55,7 @@ output "proxy_nodes" {
 # =============================================================================
 output "z_connection_info" {
   description = "Connection information for Pexip nodes"
-  value = <<-EOT
+  value       = <<-EOT
     Management Node:
     %{for name, instance in module.management_node.instances~}
     - Admin Interface: https://${instance.public_ip}:8443

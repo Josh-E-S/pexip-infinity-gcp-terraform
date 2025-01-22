@@ -56,13 +56,13 @@ variable "quantity" {
 variable "machine_type" {
   description = "GCP machine type"
   type        = string
-  default     = null  # Will be set based on node type in locals
+  default     = null # Will be set based on node type in locals
 }
 
 variable "boot_disk_size" {
   description = "Size of the boot disk in GB"
   type        = number
-  default     = null  # Will be set based on node type in locals
+  default     = null # Will be set based on node type in locals
 }
 
 variable "boot_disk_type" {
@@ -88,14 +88,6 @@ variable "ssh_public_key" {
   description = "SSH public key for node access. If not provided, a key pair will be generated"
   type        = string
   default     = ""
-}
-
-# Management Node Specific
-variable "admin_password" {
-  description = "Password for the admin user (management node only)"
-  type        = string
-  default     = null
-  sensitive   = true
 }
 
 # Conferencing Node Specific
