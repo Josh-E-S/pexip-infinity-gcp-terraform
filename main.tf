@@ -1,9 +1,19 @@
 # =============================================================================
 # APIs
 # =============================================================================
-module "apis" {
-  source     = "./modules/apis"
-  project_id = var.project_id
+resource "google_project_service" "compute" {
+  service            = "compute.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "iam" {
+  service            = "iam.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "cloud_resource_manager" {
+  service            = "cloudresourcemanager.googleapis.com"
+  disable_on_destroy = false
 }
 
 # =============================================================================
@@ -25,34 +35,12 @@ module "images" {
 module "network" {
   source = "./modules/network"
 
-  # Project configuration
   project_id = var.project_id
-  
-  # Network configuration
   network_name = var.network_name
-  regions      = var.deployment_regions
-
-  # Management access
+  regions      = var.regions
   management_access = var.management_access
-
-  # Service configuration
-  services = {
-    # Call services (in/out)
-    enable_sip   = var.pexip_services.enable_sip
-    enable_h323  = var.pexip_services.enable_h323
-    enable_teams = var.pexip_services.enable_teams
-    enable_gmeet = var.pexip_services.enable_gmeet
-    
-    # Optional outbound services
-    enable_teams_hub = var.pexip_services.enable_teams_hub
-    enable_syslog    = var.pexip_services.enable_syslog
-    enable_smtp      = var.pexip_services.enable_smtp
-    enable_ldap      = var.pexip_services.enable_ldap
-  }
-  use_existing      = var.network_config.use_existing_network
-  management_access = var.management_access
-  services          = var.pexip_services
-  apis              = module.apis
+  services = var.services
+  apis       = module.apis
 }
 
 # =============================================================================

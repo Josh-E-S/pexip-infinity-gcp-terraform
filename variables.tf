@@ -12,10 +12,10 @@ variable "network_name" {
   type        = string
 }
 
-variable "deployment_regions" {
-  description = "Region configuration for node deployment"
+variable "regions" {
+  description = "Map of regions and their subnet configurations"
   type = map(object({
-    subnet_name = string  # Name of the subnet to use in this region
+    subnet_name = string
   }))
 }
 
@@ -24,39 +24,49 @@ variable "deployment_regions" {
 # =============================================================================
 
 variable "management_access" {
-  description = "Management access configuration"
+  description = "CIDR ranges for management access (admin UI, SSH, provisioning)"
   type = object({
-    admin_ranges = list(string)  # For HTTPS (443) and provisioning (8443)
-    ssh_ranges   = list(string)  # For SSH (22)
+    cidr_ranges = list(string)
   })
+  default = {
+    cidr_ranges = ["0.0.0.0/0"]
+  }
 }
 
 # =============================================================================
 # Service Configuration
 # =============================================================================
 
-variable "pexip_services" {
-  description = "Pexip services configuration"
+variable "services" {
+  description = "Service configuration toggles"
   type = object({
-    # Call services (in/out)
+    # Management services
+    enable_ssh               = bool
+    enable_conf_provisioning = bool
+
+    # Call services (inbound)
     enable_sip   = bool
     enable_h323  = bool
     enable_teams = bool
     enable_gmeet = bool
-    
-    # Optional outbound services
-    enable_teams_hub = optional(bool, false)  # Teams Azure Event Hub
-    enable_syslog    = optional(bool, false)  # Syslog
-    enable_smtp      = optional(bool, false)  # SMTP
-    enable_ldap      = optional(bool, false)  # LDAP/LDAPS
+
+    # Optional services
+    enable_teams_hub = bool
+    enable_syslog    = bool
+    enable_smtp      = bool
+    enable_ldap      = bool
   })
   default = {
+    # Management services default to enabled
+    enable_ssh               = true
+    enable_conf_provisioning = true
+
     # Call services default to enabled
     enable_sip   = true
     enable_h323  = true
     enable_teams = true
     enable_gmeet = true
-    
+
     # Optional services default to disabled
     enable_teams_hub = false
     enable_syslog    = false

@@ -4,14 +4,12 @@
 
 output "network" {
   description = "Network configuration"
-  value       = data.google_compute_network.existing[0]
+  value       = data.google_compute_network.network
 }
 
 output "subnets" {
   description = "Subnet configuration per region"
-  value = {
-    for region, subnet in data.google_compute_subnetwork.existing : region => subnet
-  }
+  value       = data.google_compute_subnetwork.subnets
 }
 
 output "tags" {
