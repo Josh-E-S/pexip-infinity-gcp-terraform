@@ -1,94 +1,72 @@
 # =============================================================================
-# Project Configuration
+# Project and Network Configuration
 # =============================================================================
 # Prerequisites:
 # 1. Project must already exist in GCP
-# 2. Required APIs should be enabled. This module will attempt to enable them.
+# 2. Required APIs should be enabled (this module will attempt to enable them)
 # 3. Service account running Terraform must have necessary permissions
-project_id  = "pexip-infinity-project_id"
+project_id = "pexip-infinity-project"
 
 # Network Configuration:
-# The VPC network must already exist. This module does not create the network
-# or subnets, it only references them.
-network_name = "pexip-infinity-vpc"
+# Option 1: Use existing network (recommended for production)
+network_config = {
+  use_existing_network = true
+  network_name        = "pexip-infinity-vpc"  # Must already exist
+}
+
+# Option 2: Create new network
+# network_config = {
+#   use_existing_network = false
+#   network_name        = "pexip-infinity-vpc"  # Will be created
+# }
 
 # =============================================================================
 # Region Configuration
 # =============================================================================
-# Define regions and their corresponding subnets where Pexip nodes will be deployed.
-# Each region requires:
-# - An existing subnet in the VPC network above
-# - List of zones where nodes can be deployed
-#
+# Define regions where Pexip nodes will be deployed.
+# For existing networks: provide subnet_name
+# For new networks: optionally provide cidr_block (will be auto-calculated if not provided)
+
 # Example for single region:
-regions = {
+deployment_regions = {
   "us-central1" = {
-    subnet_name = "subnet-central"  # Must already exist in the VPC
-    zones       = ["us-central1-a", "us-central1-b", "us-central1-c"]
+    subnet_name = "subnet-central"  # Required if use_existing_network = true
+    cidr_block  = "10.0.1.0/24"    # Optional, used if creating new network
   }
 }
 
 # Example for multiple regions:
-# regions = {
+# deployment_regions = {
 #   "us-central1" = {
 #     subnet_name = "subnet-central"
-#     zones       = ["us-central1-a", "us-central1-b"]
+#     cidr_block  = "10.0.1.0/24"
 #   }
 #   "us-east1" = {
 #     subnet_name = "subnet-east"
-#     zones       = ["us-east1-b", "us-east1-c"]
+#     cidr_block  = "10.0.2.0/24"
 #   }
 #   "europe-west1" = {
 #     subnet_name = "subnet-europe"
-#     zones       = ["europe-west1-b", "europe-west1-c"]
+#     cidr_block  = "10.0.3.0/24"
 #   }
 # }
-
-# =============================================================================
-# Node Naming Configuration
-# =============================================================================
-# These are the base name prefixes for your Pexip nodes. The final node names
-# will be constructed using these prefixes combined with other elements:
-#
-# Management Node:
-#   Final name = [mgmt_node_name]
-#   Example: "pexip-mgmt"
-#
-# Transcoding/Proxy Nodes:
-#   Final name = [node_name_prefix]-node-[pool_name]-[count]
-#   Examples with pool name "central":
-#   - pexip-transcoding-node-central-1
-#   - pexip-transcoding-node-central-2
-#
-# Pool Naming Tips:
-# - For single region deployments, you can use simple names like "node" or "pool1"
-# - For multi-region deployments, consider using region-based names:
-#   - "central", "east", "europe"
-#   - "us-central", "us-east", "eu-west"
-#
-# These base prefixes will be used to generate the full node names:
-mgmt_node_name       = "pexip-mgmt"
-transcoding_node_name = "pexip-transcoding"
-proxy_node_name      = "pexip-proxy"
 
 # =============================================================================
 # Pexip Version and Images
 # =============================================================================
 # Specify the Pexip Infinity version you are deploying
-# This is used for naming and tagging resources
 pexip_version = "36"
 
-# Example 1: Terraform will upload local files and create images (typical first-time deployment)
-# Files can be downloaded from https://www.pexip.com/help-center/platform-download
+# Example 1: Upload local files and create images (typical first-time deployment)
 pexip_images = {
   upload_files = true
   management = {
     source_file = "/path/to/files/Pexip_Infinity_v36_GCP_pxMgr.tar.gz"
-    image_name  = "pexip-infinity-mgmt-36"  # Name for the new image being created
+    image_name  = "pexip-infinity-mgmt-36"
   }
-  conference = {
+  conferencing = {
     source_file = "/path/to/files/Pexip_Infinity_v36_GCP_pxConf.tar.gz"
-    image_name  = "pexip-infinity-conf-36"  # Name for the new image being created
+    image_name  = "pexip-infinity-conf-36"  # Used for both transcoding and proxy nodes
   }
 }
 
@@ -96,185 +74,83 @@ pexip_images = {
 # pexip_images = {
 #   upload_files = false
 #   management = {
-#     image_name = "pexip-infinity-mgmt-36"  # Must already exist in GCP
+#     image_name = "pexip-infinity-mgmt-36"
 #   }
-#   conference = {
-#     image_name = "pexip-infinity-conf-36"  # Must already exist in GCP
+#   conferencing = {
+#     image_name = "pexip-infinity-conf-36"  # Used for both transcoding and proxy nodes
 #   }
 # }
 
 # =============================================================================
 # Management Node Configuration
 # =============================================================================
-# The management node is used to configure all settings for your
-# Pexip Infinity deployment. Only one management node is deployed.
-mgmt_node = {
-  zone         = "us-central1-a"
+management_node = {
   region       = "us-central1"
-  machine_type = "n2-standard-4"
-  disk_size    = 100
-  disk_type    = "pd-standard"
-  public_ip    = true
-  static_ip    = true
-  # Service enable/disable flags
-  # Use these to control access to different services
-  # Useful for enabling services during initial setup and disabling them after
-  services = {
-    ssh       = true  # Enable/disable SSH access (port 22)
-    directory = true  # Enable/disable LDAP/Directory access (ports 389, 636)
-    smtp      = true  # Enable/disable SMTP access (ports 25, 587)
-    syslog    = true  # Enable/disable Syslog access (port 514 UDP)
-  }
-  allowed_cidrs = {
-    admin_ui = ["0.0.0.0/0"]  # Restrict admin UI access (HTTPS)
-    ssh      = ["0.0.0.0/0"]  # Restrict SSH access
-  }
-  service_cidrs = {
-    directory = ["0.0.0.0/0"]  # LDAP/Directory service access
-    smtp      = ["0.0.0.0/0"]  # SMTP service access
-    syslog    = ["0.0.0.0/0"]  # Syslog service access
-  }
-}
-
-# =============================================================================
-# Conferencing Node Initial Bootstrap Configuration
-# =============================================================================
-# These settings control access for initial provisioning of conferencing nodes
-# You may want to disable provisioning access after initial deployment
-conferencing_nodes_provisioning = {
-  services = {
-    ssh          = true  # Enable/disable SSH access to conference nodes
-    provisioning = true  # Enable/disable provisioning interface (port 8443)
-  }
-  allowed_cidrs = {
-    provisioning = ["0.0.0.0/0"]  # Restrict provisioning access
-  }
+  name         = "pexip-mgmt"           # Optional, defaults to pexip-mgmt
+  machine_type = "n2-highcpu-4"         # Optional, defaults to n2-highcpu-4
+  public_ip    = true                   # Optional, defaults to true
 }
 
 # =============================================================================
 # Transcoding Node Configuration
 # =============================================================================
-# Transcoding nodes handle the media processing for all conferences
-# They can also handle media forwarding and this is the reccomended setup for cloud deployments
-# You can create multiple pools in different regions/zones for redundancy.
-# They can also have different machine sizes based on the capacity required.
-transcoding_node_pools = {
-  node = {  # This is the node name, matches the default in variables.tf
-    machine_type = "n2-standard-4"
-    disk_size    = 50
-    disk_type    = "pd-standard"
-    region       = "us-central1"
-    zone         = "us-central1-a"
-    count        = 1        # Number of nodes. Will be added to the final node name
-    public_ip    = true     # Assign public IP
-    static_ip    = true     # Use static IP
+transcoding_nodes = {
+  regional_config = {
+    "us-central1" = {
+      node_count   = 2
+      name         = "pexip-transcoding"  # Optional, defaults to pexip-transcoding
+      machine_type = "n2-highcpu-8"       # Optional, defaults to n2-highcpu-8
+    }
   }
+  public_ip = true  # Optional, defaults to true
 }
 
-# Example of multiple transcoding nodes:
-# transcoding_node_pools = {
-#   node-us-central = {
-#     machine_type = "n2-standard-4"
-#     disk_size    = 50
-#     region       = "us-central1"
-#     zone         = "us-central1-a"
-#     count        = 2
+# Example for multiple regions:
+# transcoding_nodes = {
+#   regional_config = {
+#     "us-central1" = {
+#       node_count   = 2
+#       machine_type = "n2-highcpu-8"
+#     }
+#     "us-east1" = {
+#       node_count   = 2
+#       machine_type = "n2-highcpu-4"  # Different size for lower traffic region
+#     }
 #   }
-#   node-us-east = {
-#     machine_type = "n2-standard-4"
-#     disk_size    = 50
-#     region       = "us-east1"
-#     zone         = "us-east1-b"
-#     count        = 2
-#   }
+#   public_ip = true
 # }
 
 # =============================================================================
-# Proxy Node Configuration
+# Proxy Node Configuration (Optional)
 # =============================================================================
-# Proxy nodes are optional and NOT recommended for cloud deployments since
-# transcoding nodes can have a public 1:1 NAT and handle all functions.
-#
-# To deploy WITHOUT proxy nodes, simply set count = 0 (default)
-#
-# Only deploy proxy nodes if specifically required by your architecture.
-# Example use cases:
-# - When public IPs cannot be assigned to transcoding nodes
-# - When specific network topology requires separate proxy nodes
-proxy_node_pools = {
-  node = {  # This is the node or pool name, can be changed (e.g., "pool-central1")
-    region     = "us-central1"
-    zone       = "us-central1-a"
-    count      = 0        # Set to 0 to disable proxy nodes
-    public_ip  = true     # Only relevant if count > 0
-    static_ip  = true     # Only relevant if count > 0
+# Proxy nodes are optional and NOT recommended for cloud deployments
+# Only deploy if specifically required by your architecture
+proxy_nodes = {
+  regional_config = {
+    "us-central1" = {
+      node_count   = 1
+      name         = "pexip-proxy"     # Optional, defaults to pexip-proxy
+      machine_type = "n2-highcpu-4"    # Optional, defaults to n2-highcpu-4
+    }
   }
+  public_ip = true  # Optional, defaults to true
 }
 
 # =============================================================================
-# Transcoding Node Service Configuration
+# Management Access Configuration
 # =============================================================================
-# Configure which protocols and services are enabled on transcoding nodes
-transcoding_services = {
-  enable_protocols = {
-    sip    = true   # Enable SIP protocol
-    h323   = true   # Enable H.323 protocol
-    webrtc = true   # Enable WebRTC
-    teams  = true   # Enable Microsoft Teams integration
-    gmeet  = false  # Enable Google Meet integration
-  }
-  enable_services = {
-    one_touch_join = false  # Enable One-Touch Join
-    event_sink     = false  # Enable Event Sink
-    epic           = false  # Enable Epic integration
-    captions       = false  # Enable captions
-  }
-  ports = {
-    media = {
-      udp_range = {
-        start = 40000
-        end   = 49999
-      }
-    }
-    signaling = {
-      sip_tcp  = ["5060", "5061"]
-      sip_udp  = ["5060"]
-      h323_tcp = ["1720"]
-      h323_udp = ["1719"]
-      webrtc   = ["443"]
-    }
-    services = {
-      one_touch_join = ["443"]
-      event_sink     = ["443"]
-    }
-  }
+management_access = {
+  cidr_ranges         = ["0.0.0.0/0"]  # Restrict management access
+  enable_ssh          = true           # Enable SSH access
+  enable_provisioning = true           # Enable conference node provisioning
 }
 
 # =============================================================================
-# Proxy Node Service Configuration
+# Pexip Services Configuration
 # =============================================================================
-# Configure which protocols are enabled on proxy nodes
-proxy_services = {
-  enable_protocols = {
-    sip    = true
-    h323   = true
-    webrtc = true
-    teams  = true
-    gmeet  = false
-  }
-  ports = {
-    media = {
-      udp_range = {
-        start = 40000
-        end   = 49999
-      }
-    }
-    signaling = {
-      sip_tcp  = ["5060", "5061"]
-      sip_udp  = ["5060"]
-      h323_tcp = ["1720"]
-      h323_udp = ["1719"]
-      webrtc   = ["443"]
-    }
-  }
+pexip_services = {
+  enable_sip    = true   # Enable SIP protocol
+  enable_h323   = true   # Enable H.323 protocol
+  enable_teams  = true   # Enable Microsoft Teams integration
+  enable_gmeet  = true   # Enable Google Meet integration
 }

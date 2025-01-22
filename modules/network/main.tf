@@ -11,89 +11,169 @@ terraform {
 # =============================================================================
 # VPC Network
 # =============================================================================
-data "google_compute_network" "network" {
-  name = var.network_name
+data "google_compute_network" "existing" {
+  count = var.use_existing ? 1 : 0
+  name  = var.network_name
+}
+
+locals {
+  network = var.use_existing ? data.google_compute_network.existing[0] : null
+}
+
+# =============================================================================
+# Subnets
+# =============================================================================
+data "google_compute_subnetwork" "existing" {
+  for_each = var.use_existing ? var.regions : {}
+  name     = each.value.subnet_name
+  region   = each.key
+}
+
+locals {
+  subnets = var.use_existing ? data.google_compute_subnetwork.existing : {}
 }
 
 # =============================================================================
 # Management Node Firewall Rules
 # =============================================================================
+# Admin UI Access
 resource "google_compute_firewall" "mgmt_admin" {
-  depends_on    = [var.apis]
-  name          = "allow-mgmt-admin"
-  network       = data.google_compute_network.network.name
-  description   = "Management node administrative access (Web UI)"
+  name          = "pexip-mgmt-admin"
+  network       = local.network.name
+  description   = "Management node administrative access"
   direction     = "INGRESS"
-  source_ranges = var.mgmt_node.allowed_cidrs.admin_ui
-  target_tags   = [var.mgmt_node_name]
+  source_ranges = var.management_access.cidr_ranges
+  target_tags   = [local.tags.management]
 
   allow {
     protocol = "tcp"
-    ports    = var.mgmt_services.ports.admin_ui.tcp
+    ports    = local.ports.management.admin.tcp
   }
 }
 
+# SSH Access
 resource "google_compute_firewall" "mgmt_ssh" {
-  count         = var.mgmt_node.services.ssh ? 1 : 0
-  depends_on    = [var.apis]
-  name          = "pexip-allow-mgmt-ssh"
-  network       = data.google_compute_network.network.name
-  description   = "Allow SSH access to management node"
+  count         = var.management_access.enable_ssh ? 1 : 0
+  name          = "${local.firewall_prefix}-mgmt-ssh"
+  network       = local.network.name
+  description   = "Management node SSH access"
   direction     = "INGRESS"
-  source_ranges = var.mgmt_node.allowed_cidrs.ssh
-  target_tags   = [var.mgmt_node_name]
+  source_ranges = var.management_access.cidr_ranges
+  target_tags   = [local.tags.management]
 
   allow {
     protocol = "tcp"
-    ports    = ["22"]
+    ports    = [local.mgmt_ports.ssh]
   }
 }
 
-resource "google_compute_firewall" "mgmt_directory" {
-  count         = var.mgmt_node.services.directory ? 1 : 0
-  depends_on    = [var.apis]
-  name          = "pexip-allow-mgmt-directory"
-  network       = data.google_compute_network.network.name
-  description   = "Allow directory service access to management node"
+# Node Provisioning
+resource "google_compute_firewall" "mgmt_provisioning" {
+  count         = var.management_access.enable_provisioning ? 1 : 0
+  name          = "${local.firewall_prefix}-mgmt-provisioning"
+  network       = local.network.name
+  description   = "Management node provisioning interface"
   direction     = "INGRESS"
-  source_ranges = var.mgmt_node.service_cidrs.directory
-  target_tags   = [var.mgmt_node_name]
+  source_ranges = var.management_access.cidr_ranges
+  target_tags   = [local.tags.management]
 
   allow {
     protocol = "tcp"
-    ports    = ["389", "636"] # Both LDAP and LDAPS
+    ports    = [local.mgmt_ports.provisioning]
   }
 }
 
-resource "google_compute_firewall" "mgmt_smtp" {
-  count         = var.mgmt_node.services.smtp ? 1 : 0
-  depends_on    = [var.apis]
-  name          = "pexip-allow-mgmt-smtp"
-  network       = data.google_compute_network.network.name
-  description   = "Allow SMTP access to management node"
-  direction     = "INGRESS"
-  source_ranges = var.mgmt_node.service_cidrs.smtp
-  target_tags   = [var.mgmt_node_name]
+# Teams Event Hub (Outbound)
+resource "google_compute_firewall" "mgmt_teams_hub" {
+  count              = var.services.enable_teams ? 1 : 0
+  name               = "${local.firewall_prefix}-mgmt-teams-hub"
+  network            = local.network.name
+  description        = "Management node Teams Event Hub (outbound to Azure)"
+  direction          = "EGRESS"
+  destination_ranges = ["0.0.0.0/0"]  # Azure Event Hub endpoint
+  target_tags        = [local.tags.management]
 
   allow {
     protocol = "tcp"
-    ports    = ["25", "587"] # SMTP and Submission
+    ports    = [local.mgmt_ports.teams_hub]
   }
 }
 
-resource "google_compute_firewall" "mgmt_syslog" {
-  count         = var.mgmt_node.services.syslog ? 1 : 0
-  depends_on    = [var.apis]
-  name          = "pexip-allow-mgmt-syslog"
-  network       = data.google_compute_network.network.name
-  description   = "Allow Syslog access to management node"
+# DNS
+resource "google_compute_firewall" "mgmt_dns" {
+  name          = "pexip-mgmt-dns"
+  network       = local.network.name
+  description   = "Management node DNS"
   direction     = "INGRESS"
-  source_ranges = var.mgmt_node.service_cidrs.syslog
-  target_tags   = [var.mgmt_node_name]
+  source_ranges = var.service_ranges.dns
+  target_tags   = [local.tags.management]
+
+  dynamic "allow" {
+    for_each = local.ports.management.dns
+    content {
+      protocol = allow.key  # tcp or udp
+      ports    = allow.value
+    }
+  }
+}
+
+# NTP
+resource "google_compute_firewall" "mgmt_ntp" {
+  name          = "pexip-mgmt-ntp"
+  network       = local.network.name
+  description   = "Management node NTP"
+  direction     = "INGRESS"
+  source_ranges = var.service_ranges.ntp
+  target_tags   = [local.tags.management]
 
   allow {
     protocol = "udp"
-    ports    = ["514"] # Syslog
+    ports    = local.ports.management.ntp.udp
+  }
+}
+
+# Syslog
+resource "google_compute_firewall" "mgmt_syslog" {
+  name          = "pexip-mgmt-syslog"
+  network       = local.network.name
+  description   = "Management node Syslog"
+  direction     = "INGRESS"
+  source_ranges = var.service_ranges.syslog
+  target_tags   = [local.tags.management]
+
+  allow {
+    protocol = "udp"
+    ports    = local.ports.management.syslog.udp
+  }
+}
+
+# SMTP
+resource "google_compute_firewall" "mgmt_smtp" {
+  name          = "pexip-mgmt-smtp"
+  network       = local.network.name
+  description   = "Management node SMTP"
+  direction     = "INGRESS"
+  source_ranges = var.service_ranges.smtp
+  target_tags   = [local.tags.management]
+
+  allow {
+    protocol = "tcp"
+    ports    = local.ports.management.smtp.tcp
+  }
+}
+
+# LDAP
+resource "google_compute_firewall" "mgmt_ldap" {
+  name          = "pexip-mgmt-ldap"
+  network       = local.network.name
+  description   = "Management node LDAP"
+  direction     = "INGRESS"
+  source_ranges = var.service_ranges.ldap
+  target_tags   = [local.tags.management]
+
+  allow {
+    protocol = "tcp"
+    ports    = local.ports.management.ldap.tcp
   }
 }
 
@@ -101,124 +181,121 @@ resource "google_compute_firewall" "mgmt_syslog" {
 # Conferencing Node Firewall Rules
 # =============================================================================
 
-# Media Traffic for Transcoding Nodes
-resource "google_compute_firewall" "transcoding_media" {
-  depends_on    = [var.apis]
-  name          = "allow-transcoding-media"
-  network       = data.google_compute_network.network.name
-  description   = "Transcoding node media traffic"
+# Media Traffic (shared by all conferencing nodes)
+resource "google_compute_firewall" "media" {
+  name          = "pexip-media"
+  network       = local.network.name
+  description   = "Media traffic for conferencing nodes"
   direction     = "INGRESS"
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = [var.transcoding_node_name]
+  target_tags   = [local.tags.transcoding, local.tags.proxy]
 
   allow {
     protocol = "udp"
-    ports    = ["${var.transcoding_services.ports.media.udp_range.start}-${var.transcoding_services.ports.media.udp_range.end}"]
+    ports    = ["${local.ports.media.start}-${local.ports.media.end}"]
   }
 }
 
-# Media Traffic for Proxy Nodes
-resource "google_compute_firewall" "proxy_media" {
-  depends_on    = [var.apis]
-  name          = "allow-proxy-media"
-  network       = data.google_compute_network.network.name
-  description   = "Proxy node media traffic"
+# SIP Signaling
+resource "google_compute_firewall" "sip" {
+  count         = var.services.enable_sip ? 1 : 0
+  name          = "${local.firewall_prefix}-sip"
+  network       = local.network.name
+  description   = "SIP signaling for conferencing nodes"
   direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = [var.proxy_node_name]
+  source_ranges = var.management_access.cidr_ranges
+  target_tags   = [local.tags.transcoding, local.tags.proxy]
+
+  dynamic "allow" {
+    for_each = local.ports.conferencing.sip
+    content {
+      protocol = allow.key  # tcp or udp
+      ports    = allow.value
+    }
+  }
+}
+
+# H.323 Signaling
+resource "google_compute_firewall" "h323" {
+  count         = var.services.enable_h323 ? 1 : 0
+  name          = "${local.firewall_prefix}-h323"
+  network       = local.network.name
+  description   = "H.323 signaling for conferencing nodes"
+  direction     = "INGRESS"
+  source_ranges = var.management_access.cidr_ranges
+  target_tags   = [local.tags.transcoding, local.tags.proxy]
+
+  dynamic "allow" {
+    for_each = local.ports.conferencing.h323
+    content {
+      protocol = allow.key  # tcp or udp
+      ports    = allow.value
+    }
+  }
+}
+
+# Teams Integration
+resource "google_compute_firewall" "teams" {
+  count         = var.services.enable_teams ? 1 : 0
+  name          = "${local.firewall_prefix}-teams"
+  network       = local.network.name
+  description   = "Teams integration for conferencing nodes"
+  direction     = "INGRESS"
+  source_ranges = var.management_access.cidr_ranges
+  target_tags   = [local.tags.transcoding]
+
+  dynamic "allow" {
+    for_each = local.ports.conferencing.teams
+    content {
+      protocol = allow.key  # tcp or udp
+      ports    = allow.value
+    }
+  }
+}
+
+# Google Meet Integration
+resource "google_compute_firewall" "gmeet" {
+  count         = var.services.enable_gmeet ? 1 : 0
+  name          = "${local.firewall_prefix}-gmeet"
+  network       = local.network.name
+  description   = "Google Meet integration for conferencing nodes"
+  direction     = "INGRESS"
+  source_ranges = var.management_access.cidr_ranges
+  target_tags   = [local.tags.transcoding]
+
+  dynamic "allow" {
+    for_each = local.ports.conferencing.gmeet
+    content {
+      protocol = allow.key  # tcp or udp
+      ports    = allow.value
+    }
+  }
+}
+
+# Internal Node Communication
+resource "google_compute_firewall" "internal_udp" {
+  name          = "${local.firewall_prefix}-internal-udp"
+  network       = local.network.name
+  description   = "Internal UDP communication between nodes"
+  direction     = "INGRESS"
+  source_tags   = [local.tags.management, local.tags.transcoding, local.tags.proxy]
+  target_tags   = [local.tags.management, local.tags.transcoding, local.tags.proxy]
 
   allow {
     protocol = "udp"
-    ports    = ["${var.proxy_services.ports.media.udp_range.start}-${var.proxy_services.ports.media.udp_range.end}"]
+    ports    = local.ports.internal.udp
   }
 }
 
-# Signaling Traffic for All Conference Nodes
-resource "google_compute_firewall" "signaling" {
-  depends_on    = [var.apis]
-  name          = "allow-signaling"
-  network       = data.google_compute_network.network.name
-  description   = "Conference node signaling traffic"
+resource "google_compute_firewall" "internal_esp" {
+  name          = "${local.firewall_prefix}-internal-esp"
+  network       = local.network.name
+  description   = "Internal IPsec ESP communication between nodes"
   direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = [var.transcoding_node_name, var.proxy_node_name]
-
-  dynamic "allow" {
-    for_each = {
-      sip_tcp  = var.transcoding_services.ports.signaling.sip_tcp
-      h323_tcp = var.transcoding_services.ports.signaling.h323_tcp
-      webrtc   = var.transcoding_services.ports.signaling.webrtc
-    }
-    content {
-      protocol = "tcp"
-      ports    = allow.value
-    }
-  }
-
-  dynamic "allow" {
-    for_each = {
-      sip_udp  = var.transcoding_services.ports.signaling.sip_udp
-      h323_udp = var.transcoding_services.ports.signaling.h323_udp
-    }
-    content {
-      protocol = "udp"
-      ports    = allow.value
-    }
-  }
-}
-
-# Provisioning Access for Conferencing Nodes
-resource "google_compute_firewall" "pexip_allow_provisioning" {
-  count         = var.conferencing_nodes_provisioning.services.provisioning ? 1 : 0
-  depends_on    = [var.apis]
-  name          = "pexip-allow-provisioning"
-  network       = data.google_compute_network.network.name
-  description   = "Allow access to conferencing node provisioning interface"
-  direction     = "INGRESS"
-  source_ranges = var.conferencing_nodes_provisioning.allowed_cidrs.provisioning
-  target_tags   = [var.transcoding_node_name, var.proxy_node_name]
+  source_tags   = [local.tags.management, local.tags.transcoding, local.tags.proxy]
+  target_tags   = [local.tags.management, local.tags.transcoding, local.tags.proxy]
 
   allow {
-    protocol = "tcp"
-    ports    = ["8443"]
-  }
-}
-
-# Internal Communication between Nodes
-resource "google_compute_firewall" "internal" {
-  depends_on  = [var.apis]
-  name        = "allow-internal"
-  network     = data.google_compute_network.network.name
-  description = "Internal communication between Pexip nodes"
-  direction   = "INGRESS"
-  source_tags = [var.mgmt_node_name, var.transcoding_node_name, var.proxy_node_name]
-  target_tags = [var.mgmt_node_name, var.transcoding_node_name, var.proxy_node_name]
-
-  allow {
-    protocol = "tcp"
-    ports    = ["443"]
-  }
-}
-
-# Optional Services for Transcoding Nodes
-resource "google_compute_firewall" "transcoding_services" {
-  depends_on    = [var.apis]
-  count         = var.transcoding_services.enable_services.one_touch_join || var.transcoding_services.enable_services.event_sink ? 1 : 0
-  name          = "allow-transcoding-services"
-  network       = data.google_compute_network.network.name
-  description   = "Optional services for transcoding nodes"
-  direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = [var.transcoding_node_name]
-
-  dynamic "allow" {
-    for_each = {
-      one_touch_join = var.transcoding_services.enable_services.one_touch_join ? var.transcoding_services.ports.services.one_touch_join : []
-      event_sink     = var.transcoding_services.enable_services.event_sink ? var.transcoding_services.ports.services.event_sink : []
-    }
-    content {
-      protocol = "tcp"
-      ports    = allow.value
-    }
+    protocol = "esp"
   }
 }

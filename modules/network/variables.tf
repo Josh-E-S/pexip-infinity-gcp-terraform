@@ -1,111 +1,86 @@
+# =============================================================================
+# Network Module Variables
+# =============================================================================
+
+variable "project_id" {
+  description = "The GCP project ID"
+  type        = string
+}
+
 variable "network_name" {
-  description = "Name of the existing VPC network to use"
+  description = "Name of existing VPC network"
   type        = string
 }
 
-variable "mgmt_node_name" {
-  description = "Base name for the management node instance"
-  type        = string
+variable "use_existing" {
+  description = "Whether to use an existing network"
+  type        = bool
 }
 
-variable "transcoding_node_name" {
-  description = "Base name for transcoding conference node instances"
-  type        = string
+variable "regions" {
+  description = "Map of regions to subnet configurations"
+  type = map(object({
+    subnet_name = string
+  }))
 }
 
-variable "proxy_node_name" {
-  description = "Base name for proxy conference node instances"
-  type        = string
-}
+# =============================================================================
+# Security Configuration
+# =============================================================================
 
-variable "mgmt_node" {
-  description = "Management node configuration"
+variable "management_access" {
+  description = "Management node access configuration"
   type = object({
-    services = object({
-      ssh       = bool
-      directory = bool
-      smtp      = bool
-      syslog    = bool
-    })
-    allowed_cidrs = object({
-      admin_ui = list(string)
-      ssh      = list(string)
-    })
-    service_cidrs = object({
-      directory = list(string)
-      smtp      = list(string)
-      syslog    = list(string)
-    })
+    enable_ssh          = bool
+    enable_provisioning = bool
+    cidr_ranges         = list(string)
   })
+  default = {
+    enable_ssh          = true
+    enable_provisioning = true
+    cidr_ranges         = ["0.0.0.0/0"]
+  }
 }
 
-variable "mgmt_services" {
-  description = "Management node service configuration"
+variable "services" {
+  description = "Service configuration"
   type = object({
-    ports = object({
-      admin_ui = object({
-        tcp = list(string)
-      })
-    })
+    enable_sip   = bool
+    enable_h323  = bool
+    enable_teams = bool
+    enable_gmeet = bool
   })
+  default = {
+    enable_sip   = true
+    enable_h323  = true
+    enable_teams = true
+    enable_gmeet = true
+  }
 }
 
-variable "transcoding_services" {
-  description = "Transcoding node service configuration"
+variable "service_ranges" {
+  description = "CIDR ranges for service access"
   type = object({
-    ports = object({
-      media = object({
-        udp_range = object({
-          start = number
-          end   = number
-        })
-      })
-      signaling = object({
-        sip_tcp  = list(string)
-        sip_udp  = list(string)
-        h323_tcp = list(string)
-        h323_udp = list(string)
-        webrtc   = list(string)
-      })
-    })
-    enable_services = object({
-      one_touch_join = bool
-      event_sink     = bool
-    })
+    dns    = list(string)
+    ntp    = list(string)
+    syslog = list(string)
+    smtp   = list(string)
+    ldap   = list(string)
   })
+  default = {
+    dns    = ["0.0.0.0/0"]
+    ntp    = ["0.0.0.0/0"]
+    syslog = ["0.0.0.0/0"]
+    smtp   = ["0.0.0.0/0"]
+    ldap   = ["0.0.0.0/0"]
+  }
 }
 
-variable "proxy_services" {
-  description = "Proxy node service configuration"
-  type = object({
-    ports = object({
-      media = object({
-        udp_range = object({
-          start = number
-          end   = number
-        })
-      })
-    })
-  })
-}
-
-variable "conferencing_nodes_provisioning" {
-  description = "Conferencing nodes provisioning configuration"
-  type = object({
-    services = object({
-      provisioning = bool
-    })
-    allowed_cidrs = object({
-      provisioning = list(string)
-    })
-  })
-}
+# =============================================================================
+# Dependencies
+# =============================================================================
 
 variable "apis" {
-  description = "Enabled APIs from the apis module"
-  type = object({
-    enabled_apis = map(object({
-      id = string
-    }))
-  })
+  description = "APIs module output"
+  type        = any
 }
