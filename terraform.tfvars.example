@@ -6,7 +6,6 @@
 # 2. Required APIs should be enabled (this module will attempt to enable them)
 # 3. Service account running Terraform must have necessary permissions
 project_id = "pexip-infinity-project"
-network_name = "pexip-infinity-vpc"  # Must already exist
 
 # =============================================================================
 # Region Configuration
