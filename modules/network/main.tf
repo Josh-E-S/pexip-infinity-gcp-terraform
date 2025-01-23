@@ -1,24 +1,32 @@
 # =============================================================================
 # Network Data Sources
 # =============================================================================
-data "google_compute_network" "network" {
-  name = var.network_name
+locals {
+  networks = distinct([for r in var.regions : r.network])
+}
+
+data "google_compute_network" "networks" {
+  for_each = toset([for r in var.regions : r.network])
+  project  = var.project_id
+  name     = each.value
 }
 
 data "google_compute_subnetwork" "subnets" {
-  for_each = var.regions
-  name     = each.value.subnet_name
-  region   = each.key
+  for_each  = { for idx, r in var.regions : r.region => r }
+  project   = var.project_id
+  name      = each.value.subnet_name
+  region    = each.key
 }
 
 # =============================================================================
 # Management Node Inbound Rules
 # =============================================================================
 
-# Admin UI Access
+# Admin UI Access - create for each network
 resource "google_compute_firewall" "mgmt_admin" {
-  name          = "${local.firewall_prefix}-mgmt-admin"
-  network       = data.google_compute_network.network.name
+  for_each      = toset(local.networks)
+  name          = "${local.firewall_prefix}-mgmt-admin-${substr(md5(each.value), 0, 4)}"
+  network       = each.value
   description   = local.ports.management.admin.description
   direction     = "INGRESS"
   source_ranges = var.management_access.cidr_ranges
@@ -30,11 +38,11 @@ resource "google_compute_firewall" "mgmt_admin" {
   }
 }
 
-# SSH Access
+# SSH Access - create for each network
 resource "google_compute_firewall" "mgmt_ssh" {
-  count         = var.services.enable_ssh ? 1 : 0
-  name          = "${local.firewall_prefix}-mgmt-ssh"
-  network       = data.google_compute_network.network.name
+  for_each      = var.services.enable_ssh ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-mgmt-ssh-${substr(md5(each.value), 0, 4)}"
+  network       = each.value
   description   = local.ports.management.ssh.description
   direction     = "INGRESS"
   source_ranges = var.management_access.cidr_ranges
@@ -46,11 +54,11 @@ resource "google_compute_firewall" "mgmt_ssh" {
   }
 }
 
-# Conferencing Node Provisioning Access
+# Conferencing Node Provisioning Access - create for each network
 resource "google_compute_firewall" "mgmt_conf_provisioning" {
-  count         = var.services.enable_conf_provisioning ? 1 : 0
-  name          = "${local.firewall_prefix}-mgmt-conf-provisioning"
-  network       = data.google_compute_network.network.name
+  for_each      = var.services.enable_conf_provisioning ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-mgmt-conf-provisioning-${substr(md5(each.value), 0, 4)}"
+  network       = each.value
   description   = local.ports.management.conf_provisioning.description
   direction     = "INGRESS"
   source_ranges = var.management_access.cidr_ranges
@@ -66,79 +74,87 @@ resource "google_compute_firewall" "mgmt_conf_provisioning" {
 # Call Services (Inbound Rules)
 # =============================================================================
 
-# SIP
+# SIP - create for each network
 resource "google_compute_firewall" "sip" {
-  count         = var.services.enable_sip ? 1 : 0
-  name          = "${local.firewall_prefix}-sip"
-  network       = data.google_compute_network.network.name
+  for_each      = var.services.enable_sip ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-sip-${substr(md5(each.value), 0, 4)}"
+  network       = each.value
   description   = local.ports.conferencing.sip.description
   direction     = "INGRESS"
   source_ranges = local.default_ranges
   target_tags   = [local.tags.transcoding, local.tags.proxy]
 
-  dynamic "allow" {
-    for_each = local.ports.conferencing.sip
-    content {
-      protocol = allow.key
-      ports    = allow.value
-    }
+  allow {
+    protocol = "tcp"
+    ports    = local.ports.conferencing.sip.tcp
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = local.ports.conferencing.sip.udp
   }
 }
 
-# H.323
+# H.323 - create for each network
 resource "google_compute_firewall" "h323" {
-  count         = var.services.enable_h323 ? 1 : 0
-  name          = "${local.firewall_prefix}-h323"
-  network       = data.google_compute_network.network.name
+  for_each      = var.services.enable_h323 ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-h323-${substr(md5(each.value), 0, 4)}"
+  network       = each.value
   description   = local.ports.conferencing.h323.description
   direction     = "INGRESS"
   source_ranges = local.default_ranges
   target_tags   = [local.tags.transcoding, local.tags.proxy]
 
-  dynamic "allow" {
-    for_each = local.ports.conferencing.h323
-    content {
-      protocol = allow.key
-      ports    = allow.value
-    }
+  allow {
+    protocol = "tcp"
+    ports    = local.ports.conferencing.h323.tcp
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = local.ports.conferencing.h323.udp
   }
 }
 
-# Teams
+# Teams - create for each network
 resource "google_compute_firewall" "teams" {
-  count         = var.services.enable_teams ? 1 : 0
-  name          = "${local.firewall_prefix}-teams"
-  network       = data.google_compute_network.network.name
+  for_each      = var.services.enable_teams ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-teams-${substr(md5(each.value), 0, 4)}"
+  network       = each.value
   description   = local.ports.conferencing.teams.description
   direction     = "INGRESS"
   source_ranges = local.default_ranges
-  target_tags   = [local.tags.transcoding, local.tags.proxy]
+  target_tags   = [local.tags.transcoding]
 
-  dynamic "allow" {
-    for_each = local.ports.conferencing.teams
-    content {
-      protocol = allow.key
-      ports    = allow.value
-    }
+  allow {
+    protocol = "tcp"
+    ports    = local.ports.conferencing.teams.tcp
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = local.ports.conferencing.teams.udp
   }
 }
 
-# Google Meet
+# Google Meet - create for each network
 resource "google_compute_firewall" "gmeet" {
-  count         = var.services.enable_gmeet ? 1 : 0
-  name          = "${local.firewall_prefix}-gmeet"
-  network       = data.google_compute_network.network.name
+  for_each      = var.services.enable_gmeet ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-gmeet-${substr(md5(each.value), 0, 4)}"
+  network       = each.value
   description   = local.ports.conferencing.gmeet.description
   direction     = "INGRESS"
   source_ranges = local.default_ranges
-  target_tags   = [local.tags.transcoding, local.tags.proxy]
+  target_tags   = [local.tags.transcoding]
 
-  dynamic "allow" {
-    for_each = local.ports.conferencing.gmeet
-    content {
-      protocol = allow.key
-      ports    = allow.value
-    }
+  allow {
+    protocol = "tcp"
+    ports    = local.ports.conferencing.gmeet.tcp
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = local.ports.conferencing.gmeet.udp
   }
 }
 
@@ -146,21 +162,27 @@ resource "google_compute_firewall" "gmeet" {
 # Internal Node Communication
 # =============================================================================
 
-# Internal node communication (IPsec)
+# Allow IPsec communication between nodes (IKE and ESP)
 resource "google_compute_firewall" "internal_node" {
-  name        = "${local.firewall_prefix}-internal-node"
-  network     = data.google_compute_network.network.name
+  for_each = data.google_compute_network.networks
+
+  name    = format("%s-internal-%s", local.firewall_prefix, substr(sha256(each.key), 0, 4))
+  network = each.value.name
+  project = var.project_id
+
   description = local.ports.internal.description
-  direction   = "INGRESS"
+
   source_tags = [local.tags.management, local.tags.transcoding, local.tags.proxy]
   target_tags = [local.tags.management, local.tags.transcoding, local.tags.proxy]
 
+  # Allow ISAKMP (IKE) for IPsec key exchange
   allow {
     protocol = "udp"
     ports    = local.ports.internal.udp
   }
 
+  # Allow ESP (protocol 50) for IPsec data
   allow {
-    protocol = local.ports.internal.protocols[0]  # ESP protocol
+    protocol = "esp"
   }
 }

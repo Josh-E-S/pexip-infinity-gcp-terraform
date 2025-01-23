@@ -13,11 +13,6 @@ variable "region" {
   type        = string
 }
 
-variable "pexip_version" {
-  description = "Pexip Infinity version"
-  type        = string
-}
-
 # Image Configuration
 variable "images" {
   description = "Pexip Infinity image configuration"

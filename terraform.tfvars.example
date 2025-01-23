@@ -1,72 +1,89 @@
 # =============================================================================
-# Project and Network Configuration
+# Project Configuration
 # =============================================================================
 # Prerequisites:
 # 1. Project must already exist in GCP
 # 2. Required APIs should be enabled (this module will attempt to enable them)
 # 3. Service account running Terraform must have necessary permissions
 project_id = "pexip-infinity-project"
-
-# Network Configuration:
-# Option 1: Use existing network (recommended for production)
-network_config = {
-  use_existing_network = true
-  network_name        = "pexip-infinity-vpc"  # Must already exist
-}
-
-# Option 2: Create new network
-# network_config = {
-#   use_existing_network = false
-#   network_name        = "pexip-infinity-vpc"  # Will be created
-# }
+network_name = "pexip-infinity-vpc"  # Must already exist
 
 # =============================================================================
 # Region Configuration
 # =============================================================================
-# Define regions where Pexip nodes will be deployed.
-# For existing networks: provide subnet_name
-# For new networks: optionally provide cidr_block (will be auto-calculated if not provided)
+
+# Define regions and their network configurations
+# The first region in the list will be used as the primary region for management node deployment
 
 # Example for single region:
-deployment_regions = {
-  "us-central1" = {
-    subnet_name = "subnet-central"  # Required if use_existing_network = true
-    cidr_block  = "10.0.1.0/24"    # Optional, used if creating new network
+regions = [
+  {
+    region      = "us-central1"
+    network     = "pexip-vpc-us"
+    subnet_name = "subnet-central"
   }
-}
+]
 
 # Example for multiple regions:
-# deployment_regions = {
-#   "us-central1" = {
+# regions = [
+#   {
+#     region      = "us-central1"     # Primary region (first in list)
+#     network     = "pexip-vpc-us"    # Can use same or different VPCs per region
 #     subnet_name = "subnet-central"
-#     cidr_block  = "10.0.1.0/24"
-#   }
-#   "us-east1" = {
+#   },
+#   {
+#     region      = "us-east1"
+#     network     = "pexip-vpc-us"    # Reusing same VPC as us-central1
 #     subnet_name = "subnet-east"
-#     cidr_block  = "10.0.2.0/24"
-#   }
-#   "europe-west1" = {
+#   },
+#   {
+#     region      = "europe-west1"
+#     network     = "pexip-vpc-eu"    # Using different VPC for EU
 #     subnet_name = "subnet-europe"
-#     cidr_block  = "10.0.3.0/24"
 #   }
-# }
+# ]
 
 # =============================================================================
-# Pexip Version and Images
+# Management Access Configuration
 # =============================================================================
-# Specify the Pexip Infinity version you are deploying
-pexip_version = "36"
+management_access = {
+  cidr_ranges = ["0.0.0.0/0"]  # Restrict management access
+}
 
+# =============================================================================
+# Service Configuration
+# =============================================================================
+services = {
+  # Management services
+  enable_ssh               = true
+  enable_conf_provisioning = true
+
+  # Call services (inbound)
+  enable_sip   = true
+  enable_h323  = true
+  enable_teams = true
+  enable_gmeet = true
+
+  # Optional services
+  enable_teams_hub = false
+  enable_syslog    = false
+  enable_smtp      = false
+  enable_ldap      = false
+}
+
+# =============================================================================
+# Pexip Images
+# =============================================================================
 # Example 1: Upload local files and create images (typical first-time deployment)
 pexip_images = {
   upload_files = true
   management = {
-    source_file = "/path/to/files/Pexip_Infinity_v36_GCP_pxMgr.tar.gz"
-    image_name  = "pexip-infinity-mgmt-36"
+    source_file = "/path/to/files/Pexip_Infinity_Management_Node.tar.gz"
+    image_name  = "pexip-infinity-management"
   }
   conferencing = {
-    source_file = "/path/to/files/Pexip_Infinity_v36_GCP_pxConf.tar.gz"
-    image_name  = "pexip-infinity-conf-36"  # Used for both transcoding and proxy nodes
+    source_file = "/path/to/files/Pexip_Infinity_Conferencing_Node.tar.gz"
+    image_name  = "pexip-infinity-conferencing"  # Used for both transcoding and proxy nodes
   }
 }
 
@@ -74,10 +91,10 @@ pexip_images = {
 # pexip_images = {
 #   upload_files = false
 #   management = {
-#     image_name = "pexip-infinity-mgmt-36"
+#     image_name = "pexip-infinity-management"
 #   }
 #   conferencing = {
-#     image_name = "pexip-infinity-conf-36"  # Used for both transcoding and proxy nodes
+#     image_name = "pexip-infinity-conferencing"  # Used for both transcoding and proxy nodes
 #   }
 # }
 
@@ -85,10 +102,9 @@ pexip_images = {
 # Management Node Configuration
 # =============================================================================
 management_node = {
-  region       = "us-central1"
-  name         = "pexip-mgmt"           # Optional, defaults to pexip-mgmt
-  machine_type = "n2-highcpu-4"         # Optional, defaults to n2-highcpu-4
-  public_ip    = true                   # Optional, defaults to true
+  name      = "pexip-mgmt"
+  region    = "us-central1"
+  public_ip = true
 }
 
 # =============================================================================
@@ -97,60 +113,44 @@ management_node = {
 transcoding_nodes = {
   regional_config = {
     "us-central1" = {
-      node_count   = 2
-      name         = "pexip-transcoding"  # Optional, defaults to pexip-transcoding
-      machine_type = "n2-highcpu-8"       # Optional, defaults to n2-highcpu-8
+      count        = 2
+      public_ip    = true
+      name         = "pexip-transcoding"
+      machine_type = "n2-highcpu-8"
     }
   }
-  public_ip = true  # Optional, defaults to true
 }
 
 # Example for multiple regions:
 # transcoding_nodes = {
 #   regional_config = {
 #     "us-central1" = {
-#       node_count   = 2
+#       count        = 2
+#       public_ip    = true
+#       name         = "pexip-transcoding"
 #       machine_type = "n2-highcpu-8"
 #     }
 #     "us-east1" = {
-#       node_count   = 2
+#       count        = 2
+#       public_ip    = true
+#       name         = "pexip-transcoding-east"
 #       machine_type = "n2-highcpu-4"  # Different size for lower traffic region
 #     }
 #   }
-#   public_ip = true
 # }
 
 # =============================================================================
-# Proxy Node Configuration (Optional)
+# Proxy Node Configuration
 # =============================================================================
 # Proxy nodes are optional and NOT recommended for cloud deployments
 # Only deploy if specifically required by your architecture
 proxy_nodes = {
   regional_config = {
     "us-central1" = {
-      node_count   = 1
-      name         = "pexip-proxy"     # Optional, defaults to pexip-proxy
-      machine_type = "n2-highcpu-4"    # Optional, defaults to n2-highcpu-4
+      count        = 1
+      public_ip    = true
+      name         = "pexip-proxy"
+      machine_type = "n2-highcpu-4"
     }
   }
-  public_ip = true  # Optional, defaults to true
-}
-
-# =============================================================================
-# Management Access Configuration
-# =============================================================================
-management_access = {
-  cidr_ranges         = ["0.0.0.0/0"]  # Restrict management access
-  enable_ssh          = true           # Enable SSH access
-  enable_provisioning = true           # Enable conference node provisioning
-}
-
-# =============================================================================
-# Pexip Services Configuration
-# =============================================================================
-pexip_services = {
-  enable_sip    = true   # Enable SIP protocol
-  enable_h323   = true   # Enable H.323 protocol
-  enable_teams  = true   # Enable Microsoft Teams integration
-  enable_gmeet  = true   # Enable Google Meet integration
 }

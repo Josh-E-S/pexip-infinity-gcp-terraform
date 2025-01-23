@@ -5,6 +5,7 @@ locals {
   bucket_name = "${var.project_id}-pexip-images"
 }
 
+# Create storage bucket
 resource "google_storage_bucket" "pexip_images" {
   count                       = var.images.upload_files ? 1 : 0
   name                        = local.bucket_name
@@ -33,7 +34,7 @@ resource "google_storage_bucket_object" "conferencing_image" {
 # Create management node image
 resource "google_compute_image" "management" {
   count = var.images.upload_files ? 1 : 0
-  name  = "pexip-infinity-${var.pexip_version}-management"
+  name  = "pexip-infinity-management"
   raw_disk {
     source = "gs://${local.bucket_name}/${basename(var.images.management.source_file)}"
   }
@@ -43,7 +44,7 @@ resource "google_compute_image" "management" {
 # Create conferencing node image (used by both transcoding and proxy nodes)
 resource "google_compute_image" "conferencing" {
   count = var.images.upload_files ? 1 : 0
-  name  = "pexip-infinity-${var.pexip_version}-conferencing"
+  name  = "pexip-infinity-conferencing"
   raw_disk {
     source = "gs://${local.bucket_name}/${basename(var.images.conferencing.source_file)}"
   }

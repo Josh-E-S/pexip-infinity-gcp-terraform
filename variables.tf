@@ -7,15 +7,12 @@ variable "project_id" {
   type        = string
 }
 
-variable "network_name" {
-  description = "Name of the VPC network to use"
-  type        = string
-}
-
 variable "regions" {
-  description = "Map of regions and their subnet configurations"
-  type = map(object({
-    subnet_name = string
+  description = "List of regions and their network configurations"
+  type = list(object({
+    region      = string
+    network     = string     # Name of existing VPC network
+    subnet_name = string     # Name of existing subnet in the VPC
   }))
 }
 
@@ -73,16 +70,6 @@ variable "services" {
     enable_smtp      = false
     enable_ldap      = false
   }
-}
-
-variable "region" {
-  description = "Primary region for Pexip deployment"
-  type        = string
-}
-
-variable "pexip_version" {
-  description = "Pexip Infinity version"
-  type        = string
 }
 
 variable "pexip_images" {

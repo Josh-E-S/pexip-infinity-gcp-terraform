@@ -8,14 +8,11 @@ variable "project_id" {
 }
 
 # Network Configuration
-variable "network_name" {
-  description = "Name of the VPC network to use"
-  type        = string
-}
-
 variable "regions" {
-  description = "Map of regions and their subnet configurations"
-  type = map(object({
+  description = "List of regions with their network and subnet configurations"
+  type = list(object({
+    region      = string
+    network     = string
     subnet_name = string
   }))
 }
@@ -70,11 +67,4 @@ variable "services" {
   }
 }
 
-# =============================================================================
-# Dependencies
-# =============================================================================
 
-variable "apis" {
-  description = "APIs module output"
-  type        = any
-}

@@ -6,14 +6,16 @@ output "images" {
   description = "Created or referenced Pexip images"
   value = {
     management = {
-      id        = var.images.upload_files ? google_compute_image.management[0].id : var.images.management.image_name
-      name      = var.images.upload_files ? google_compute_image.management[0].name : var.images.management.image_name
-      self_link = var.images.upload_files ? google_compute_image.management[0].self_link : var.images.management.image_name
+      name = var.images.upload_files ? google_compute_image.management[0].name : var.images.management.image_name
+      # Only output id and self_link if we created the image
+      id        = var.images.upload_files ? google_compute_image.management[0].id : null
+      self_link = var.images.upload_files ? google_compute_image.management[0].self_link : null
     }
     conferencing = {
-      id        = var.images.upload_files ? google_compute_image.conferencing[0].id : var.images.conferencing.image_name
-      name      = var.images.upload_files ? google_compute_image.conferencing[0].name : var.images.conferencing.image_name
-      self_link = var.images.upload_files ? google_compute_image.conferencing[0].self_link : var.images.conferencing.image_name
+      name = var.images.upload_files ? google_compute_image.conferencing[0].name : var.images.conferencing.image_name
+      # Only output id and self_link if we created the image
+      id        = var.images.upload_files ? google_compute_image.conferencing[0].id : null
+      self_link = var.images.upload_files ? google_compute_image.conferencing[0].self_link : null
     }
   }
 }

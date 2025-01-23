@@ -1,0 +1,12 @@
+# Advanced example configuration
+project_id = "my-project-id"  # Replace with your project ID
+
+# Restrict management access to internal networks
+management_cidr_ranges = [
+  "10.0.0.0/8",     # RFC1918 private network
+  "172.16.0.0/12",  # RFC1918 private network
+]
+
+# Paths to Pexip image files
+management_image_path = "./images/pexip-infinity-29-mgmt.tar.gz"
+conferencing_image_path = "./images/pexip-infinity-29-conf.tar.gz"

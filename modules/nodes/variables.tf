@@ -48,8 +48,8 @@ variable "quantity" {
   type        = number
   default     = 1
   validation {
-    condition     = var.quantity > 0
-    error_message = "Quantity must be greater than 0"
+    condition     = var.type == "management" ? var.quantity == 1 : var.quantity > 0
+    error_message = "Quantity must be 1 for management nodes and greater than 0 for conferencing nodes"
   }
 }
 
@@ -65,12 +65,6 @@ variable "boot_disk_size" {
   default     = null # Will be set based on node type in locals
 }
 
-variable "boot_disk_type" {
-  description = "Type of boot disk (pd-standard, pd-balanced, pd-ssd)"
-  type        = string
-  default     = "pd-standard"
-}
-
 variable "public_ip" {
   description = "Whether to assign a public IP to the node"
   type        = bool
@@ -81,33 +75,6 @@ variable "labels" {
   description = "Labels to apply to the node"
   type        = map(string)
   default     = {}
-}
-
-# SSH Key (will be generated if not provided)
-variable "ssh_public_key" {
-  description = "SSH public key for node access. If not provided, a key pair will be generated"
-  type        = string
-  default     = ""
-}
-
-# Conferencing Node Specific
-variable "management_node_address" {
-  description = "Address of management node (required for conferencing nodes)"
-  type        = string
-  default     = null
-}
-
-variable "management_shared_secret" {
-  description = "Shared secret for management node (required for conferencing nodes)"
-  type        = string
-  default     = null
-  sensitive   = true
-}
-
-variable "system_location" {
-  description = "System location name for conferencing nodes"
-  type        = string
-  default     = null
 }
 
 variable "apis" {

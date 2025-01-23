@@ -1,18 +1,14 @@
 # =============================================================================
 # Network Outputs
 # =============================================================================
-output "network" {
-  description = "Network configuration"
-  value = {
-    name    = module.network.network.name
-    id      = module.network.network.id
-    subnets = module.network.subnets
-  }
+output "networks" {
+  description = "Network configurations"
+  value       = module.network.networks
 }
 
-output "firewall_rules" {
-  description = "Created firewall rules"
-  value       = module.network.firewall_rules
+output "subnets" {
+  description = "Subnet configurations"
+  value       = module.network.subnets
 }
 
 # =============================================================================
@@ -86,9 +82,13 @@ output "z_connection_info" {
 output "summary" {
   description = "Summary of deployed resources"
   value = {
-    network = {
-      name    = module.network.network.name
-      subnets = module.network.subnets
+    networks = {
+      for name, network in module.network.networks : name => {
+        subnets = {
+          for region, subnet in module.network.subnets : region => subnet.name
+          if subnet.network == network.name
+        }
+      }
     }
     nodes = {
       management = {
@@ -99,7 +99,7 @@ output "summary" {
       transcoding = {
         for region, node in module.transcoding_nodes : region => {
           count = length(node.instances)
-          nodes = {
+          instances = {
             for name, instance in node.instances : name => {
               public_ip = instance.public_ip
             }
@@ -109,7 +109,7 @@ output "summary" {
       proxy = {
         for region, node in module.proxy_nodes : region => {
           count = length(node.instances)
-          nodes = {
+          instances = {
             for name, instance in node.instances : name => {
               public_ip = instance.public_ip
             }
@@ -117,6 +117,5 @@ output "summary" {
         }
       }
     }
-    images = module.images.images
   }
 }
