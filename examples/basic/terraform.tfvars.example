@@ -38,9 +38,10 @@ management_node = {
 transcoding_nodes = {
   regional_config = {
     "us-central1" = {
-      count     = 2
+      count     = 1
       name      = "transcode"
       public_ip = true
+      machine_type = "n2-highcpu-8"
     }
   }
 }
