@@ -1,12 +1,156 @@
-# Advanced example configuration
-project_id = "my-project-id"  # Replace with your project ID
+# =============================================================================
+# Required Parameters
+# =============================================================================
+# The project ID is required for all GCP resource creation
+# This should be a valid GCP project with the necessary APIs enabled
 
-# Restrict management access to internal networks
-management_cidr_ranges = [
-  "10.0.0.0/8",     # RFC1918 private network
-  "172.16.0.0/12",  # RFC1918 private network
+project_id = "your-project-id"
+
+# =============================================================================
+# Network Configuration
+# =============================================================================
+# Define your multi-region deployment architecture
+# Each region requires:
+#  - A pre-existing VPC network
+#  - A pre-existing subnet within that network
+#  - Proper firewall rules (created automatically by this module)
+
+regions = [
+  {
+    region      = "us-central1"    # Primary region for management node
+    network     = "pexip-network"  # VPC network name
+    subnet_name = "pexip-subnet-central1"
+  },
+  {
+    region      = "us-east1"       # Secondary region for geographic distribution
+    network     = "pexip-network"
+    subnet_name = "pexip-subnet-east1"
+  },
+  {
+    region      = "europe-west1"   # European region for lower latency
+    network     = "pexip-network"
+    subnet_name = "pexip-subnet-europe1"
+  },
+  {
+    region      = "asia-southeast1" # APAC region for global coverage
+    network     = "pexip-network"
+    subnet_name = "pexip-subnet-asia1"
+  }
 ]
 
-# Paths to Pexip image files
-management_image_path = "./images/pexip-infinity-29-mgmt.tar.gz"
-conferencing_image_path = "./images/pexip-infinity-29-conf.tar.gz"
+# =============================================================================
+# Management Access Configuration
+# =============================================================================
+# Define CIDR ranges that can access management interfaces
+# This includes:
+#  - SSH access (port 22)
+#  - Admin UI (port 443)
+#  - Conferencing Node Provisioning (port 8443)
+
+management_access = {
+  cidr_ranges = [
+    "10.0.0.0/8",        # Internal corporate network
+    "192.168.0.0/16",    # VPN network
+    "203.0.113.0/24"     # Office network
+  ]
+}
+
+# =============================================================================
+# Pexip Image Configuration
+# =============================================================================
+# Configure the Pexip Infinity images to use
+# Options:
+#  - Upload new images (upload_files = true)
+#  - Use existing images (upload_files = false)
+# Note: Image paths should be absolute paths to .tar.gz files
+
+pexip_images = {
+  upload_files = true
+  management = {
+    source_file = "/path/to/Pexip_Infinity_Management_Node_v30.tar.gz"
+    image_name  = "pexip-infinity-management-v30"
+  }
+  conferencing = {
+    source_file = "/path/to/Pexip_Infinity_Conferencing_Node_v30.tar.gz"
+    image_name  = "pexip-infinity-conferencing-v30"
+  }
+}
+
+# =============================================================================
+# Service Configuration
+# =============================================================================
+# Enable or disable specific Pexip services
+# Security Note: Only enable services that you need
+# Default ports will be opened in firewall rules automatically
+
+services = {
+  # Management Services
+  enable_ssh               = true  # SSH access to nodes (port 22)
+  enable_conf_provisioning = true  # Conferencing node provisioning (port 8443)
+
+  # Call Services (Inbound)
+  enable_sip              = true  # SIP/SIP-TLS calling (ports 5060/5061)
+  enable_h323            = true  # H.323 calling (ports 1720/1719)
+  enable_teams           = true  # Microsoft Teams integration
+  enable_gmeet           = true  # Google Meet integration
+
+  # Optional Services
+  enable_teams_hub        = true  # Teams Connector Azure Event Hub
+  enable_syslog           = true  # External syslog (port 514)
+  enable_smtp             = true  # Email notifications (port 587)
+  enable_ldap             = true  # LDAP authentication (port 389)
+}
+
+# =============================================================================
+# Node Configurations
+# =============================================================================
+# Configure the specifications for each node type
+# Consider these factors when choosing machine types:
+#  - Number of concurrent calls
+#  - Types of conferences (Teams/Meet/SIP/H.323)
+#  - Geographic distribution of users
+
+# Management Node Configuration
+# This node handles all system configuration and licensing
+management_node = {
+  name         = "mgmt-primary"
+  region       = "us-central1"
+  public_ip    = true              # Set false for private-only access
+  machine_type = "n2-highcpu-8"    # Sized for larger deployments
+  disk_size    = 150               # Larger disk for logs and recordings
+}
+
+# Transcoding Nodes Configuration
+# These nodes handle media processing and conferencing
+transcoding_nodes = {
+  regional_config = {
+    "us-central1" = {
+      count        = 1             # Number of nodes in this region
+      name         = "transcode-central-1"
+      public_ip    = true         # Required for external participants
+      machine_type = "n2-standard-2"
+      disk_size    = 50
+    }
+    "us-east1" = {
+      count        = 1
+      name         = "transcode-east-1"
+      public_ip    = true
+      machine_type = "n2-standard-2"
+      disk_size    = 50
+    }
+  }
+}
+
+# Proxy Nodes Configuration
+# These nodes handle call signaling and media forwarding
+proxy_nodes = {
+  regional_config = {
+    "us-central1" = {
+      count        = 1            # Start with 1, scale based on load
+      name         = "proxy-central"
+      public_ip    = true        # Required for external participants
+      machine_type = "n2-highcpu-4"
+      disk_size    = 50
+    }
+  }
+}

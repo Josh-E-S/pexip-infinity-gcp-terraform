@@ -1,89 +1,113 @@
 # Advanced Pexip Infinity Deployment Example
 
-This example demonstrates a full-featured deployment of Pexip Infinity across multiple regions. It includes:
-- Multi-region deployment (4 regions)
-- Custom machine types and disk sizes
-- All optional services enabled
-- Image upload functionality
-- 2 transcoding nodes and 1 proxy node per region
+This example demonstrates a full-featured deployment of Pexip Infinity on Google Cloud Platform (GCP). It includes multi-region support, configurable management access, and automated node deployment.
+
+## Architecture Overview
+
+This deployment creates:
+- Management Node in the primary region
+- Transcoding Nodes across multiple regions
+- Proxy Nodes for edge connectivity
+- Secure firewall rules for management and media traffic
+- GCS bucket for Pexip image storage
 
 ## Prerequisites
 
-1. A GCP project with required APIs enabled
-2. An existing VPC network with subnets in each region:
-   - us-central1
-   - us-east1
-   - europe-west1
-   - asia-southeast1
-3. Pexip Infinity image files downloaded locally:
-   - Management Node image
-   - Conferencing Node image
+1. A GCP project with billing enabled
+2. The following APIs enabled:
+   - Compute Engine API
+   - Cloud Resource Manager API
+   - IAM API
+   - Secret Manager API
+   - Storage API
+
+3. Pexip Infinity images:
+   - Management Node image (.tar.gz)
+   - Conferencing Node image (.tar.gz)
+
+4. Network Infrastructure:
+   - VPC network
+   - Subnets in each deployment region
+   - External IP addresses (if using public IPs)
 
 ## Usage
 
-1. Create a `terraform.tfvars` file with your specific values:
+1. Copy `terraform.tfvars.example` to `terraform.tfvars`:
+   ```bash
+   cp terraform.tfvars.example terraform.tfvars
+   ```
 
-```hcl
-project_id = "your-project-id"
-network_name = "your-vpc-network"
+2. Update `terraform.tfvars` with your configuration:
+   - Set your GCP project ID
+   - Configure network settings
+   - Set management access CIDR ranges
+   - Update Pexip image paths
+   - Configure node specifications
 
-subnet_names = {
-  "us-central1"      = "subnet-central"
-  "us-east1"         = "subnet-east"
-  "europe-west1"     = "subnet-europe"
-  "asia-southeast1"  = "subnet-asia"
-}
+3. Initialize Terraform:
+   ```bash
+   terraform init
+   ```
 
-management_cidrs = [
-  "10.0.0.0/8",      # Internal network
-  "203.0.113.0/24"   # VPN network
-]
+4. Review the deployment plan:
+   ```bash
+   terraform plan
+   ```
 
-management_image_path = "/path/to/Pexip_Infinity_Management_Node_v30.tar.gz"
-conferencing_image_path = "/path/to/Pexip_Infinity_Conferencing_Node_v30.tar.gz"
-```
+5. Apply the configuration:
+   ```bash
+   terraform apply
+   ```
 
-2. Initialize and apply:
-```bash
-terraform init
-terraform plan
-terraform apply
-```
+## Security Features
 
-## Node Configuration
+### Management Access
+- SSH (port 22)
+- Admin UI (port 443)
+- Provisioning (port 8443)
+- Access restricted to specified CIDR ranges
+
+### Media Services
+- SIP/SIP-TLS (ports 5060/5061)
+- H.323 (ports 1720/1719)
+- Microsoft Teams integration
+- Google Meet integration
+- Open to 0.0.0.0/0 by default
+
+### Internal Communication
+- Secure IPsec between nodes
+- Automated firewall rule configuration
+
+## Node Types
 
 ### Management Node
-- Region: us-central1
-- Machine Type: n2-highcpu-8 (upgraded for higher capacity)
-- Disk Size: 150GB (larger for more logs)
-- Public IP: Yes
+- System configuration and licensing
+- Conference scheduling
+- One per deployment
 
-### Transcoding Nodes (per region)
-- Count: 2 nodes per region
-- Machine Type: n2-highcpu-16
-- Disk Size: 80GB
-- Public IP: Yes
+### Transcoding Nodes
+- Media processing
+- Conference hosting
+- Scalable across regions
 
-### Proxy Nodes (per region)
-- Count: 1 node per region
-- Machine Type: n2-highcpu-4
-- Disk Size: 50GB
-- Public IP: Yes
+### Proxy Nodes
+- Call signaling
+- Media forwarding
+- Edge connectivity
 
-## Services Enabled
-- Core Services:
-  - SIP
-  - H.323
-  - Microsoft Teams
-  - Google Meet
-- Optional Services:
-  - Teams Hub
-  - Syslog
-  - SMTP
-  - LDAP
+## Outputs
 
-## Notes
-- This is an advanced configuration suitable for large-scale deployments
-- Adjust machine types and node counts based on your capacity requirements
-- Review and restrict management_cidrs for production use
-- Consider your high availability requirements when choosing regions
+After successful deployment, you'll receive:
+- Management node access details
+- Node IP addresses
+- Network configuration summary
+- Connection instructions
+
+## Clean Up
+
+To destroy the deployment:
+```bash
+terraform destroy
+```
+
+**Note:** This will remove all resources including stored data. Ensure you have backups if needed.
