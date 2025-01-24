@@ -1,2 +1,46 @@
-# Basic example configuration
-project_id = "my-project-id"  # Replace with your project ID
+# ---------------------------------------------------------------------------------------------------------------------
+# REQUIRED PARAMETERS
+# These variables must be set when using this module.
+# ---------------------------------------------------------------------------------------------------------------------
+
+project_id = "your-project-id"
+
+# ---------------------------------------------------------------------------------------------------------------------
+# NETWORK AND SUBNET CONFIGURATION
+# Specify the network and subnet configuration for each region
+# ---------------------------------------------------------------------------------------------------------------------
+
+regions = [{
+  region      = "us-central1"
+  network     = "pexip-infinity"
+  subnet_name = "pexip-subnet-central1"
+}]
+
+# ---------------------------------------------------------------------------------------------------------------------
+# IMAGE CONFIGURATION
+# Names of existing Pexip images
+# ---------------------------------------------------------------------------------------------------------------------
+
+management_image_name   = "pexip-infinity-management-v30"
+conferencing_image_name = "pexip-infinity-conferencing-v30"
+
+# ---------------------------------------------------------------------------------------------------------------------
+# NODE CONFIGURATION
+# Configure management and transcoding nodes
+# ---------------------------------------------------------------------------------------------------------------------
+
+management_node = {
+  name      = "mgmt-1"
+  region    = "us-central1"
+  public_ip = true
+}
+
+transcoding_nodes = {
+  regional_config = {
+    "us-central1" = {
+      count     = 2
+      name      = "transcode"
+      public_ip = true
+    }
+  }
+}

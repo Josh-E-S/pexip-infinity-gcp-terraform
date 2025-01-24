@@ -8,11 +8,7 @@ module "pexip" {
   project_id = var.project_id
   
   # Required: Network configuration (single region)
-  regions = [{
-    region      = "us-central1"
-    network     = var.network_name     # Must exist
-    subnet_name = var.subnet_name      # Must exist
-  }]
+  regions = var.regions
 
   # Required: Image configuration (using existing images)
   pexip_images = {
@@ -25,19 +21,9 @@ module "pexip" {
     }
   }
 
-  # Required: Management node configuration
-  management_node = {
-    name   = "mgmt-1"
-    region = "us-central1"
-  }
+  # Required: Management node
+  management_node = var.management_node
 
   # Optional but recommended: Transcoding nodes
-  transcoding_nodes = {
-    regional_config = {
-      "us-central1" = {
-        count = 2
-        name  = "transcode"
-      }
-    }
-  }
+  transcoding_nodes = var.transcoding_nodes
 }
