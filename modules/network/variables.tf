@@ -1,111 +1,68 @@
-variable "network_name" {
-  description = "Name of the existing VPC network to use"
+# =============================================================================
+# Network Module Variables
+# =============================================================================
+
+variable "project_id" {
+  description = "GCP project ID"
   type        = string
 }
 
-variable "mgmt_node_name" {
-  description = "Base name for the management node instance"
-  type        = string
+# Network Configuration
+variable "regions" {
+  description = "List of regions with their network and subnet configurations"
+  type = list(object({
+    region      = string
+    network     = string
+    subnet_name = string
+  }))
 }
 
-variable "transcoding_node_name" {
-  description = "Base name for transcoding conference node instances"
-  type        = string
-}
-
-variable "proxy_node_name" {
-  description = "Base name for proxy conference node instances"
-  type        = string
-}
-
-variable "mgmt_node" {
-  description = "Management node configuration"
+# Management Access Configuration
+variable "management_access" {
+  description = "CIDR ranges for all management-related access (admin UI, SSH, provisioning). These ranges will be applied to all management firewall rules. Defaults to 0.0.0.0/0 but should be restricted in production."
   type = object({
-    services = object({
-      ssh       = bool
-      directory = bool
-      smtp      = bool
-      syslog    = bool
-    })
-    allowed_cidrs = object({
-      admin_ui = list(string)
-      ssh      = list(string)
-    })
-    service_cidrs = object({
-      directory = list(string)
-      smtp      = list(string)
-      syslog    = list(string)
-    })
+    cidr_ranges = list(string)
   })
+  default = {
+    cidr_ranges = ["0.0.0.0/0"]
+  }
 }
 
-variable "mgmt_services" {
-  description = "Management node service configuration"
+# Service Configuration
+variable "services" {
+  description = "Service configuration toggles. All call services (SIP, H.323, Teams, GMeet) are open to 0.0.0.0/0 by default as they handle media and signaling traffic."
   type = object({
-    ports = object({
-      admin_ui = object({
-        tcp = list(string)
-      })
-    })
-  })
-}
+    # Management services
+    enable_ssh               = bool
+    enable_conf_provisioning = bool
 
-variable "transcoding_services" {
-  description = "Transcoding node service configuration"
-  type = object({
-    ports = object({
-      media = object({
-        udp_range = object({
-          start = number
-          end   = number
-        })
-      })
-      signaling = object({
-        sip_tcp  = list(string)
-        sip_udp  = list(string)
-        h323_tcp = list(string)
-        h323_udp = list(string)
-        webrtc   = list(string)
-      })
-    })
-    enable_services = object({
-      one_touch_join = bool
-      event_sink     = bool
-    })
-  })
-}
+    # Call services (inbound)
+    enable_sip   = bool
+    enable_h323  = bool
+    enable_teams = bool
+    enable_gmeet = bool
 
-variable "proxy_services" {
-  description = "Proxy node service configuration"
-  type = object({
-    ports = object({
-      media = object({
-        udp_range = object({
-          start = number
-          end   = number
-        })
-      })
-    })
+    # Optional services
+    enable_teams_hub = bool
+    enable_syslog    = bool
+    enable_smtp      = bool
+    enable_ldap      = bool
   })
-}
+  default = {
+    # Management services default to enabled
+    enable_ssh               = true
+    enable_conf_provisioning = true
 
-variable "conferencing_nodes_provisioning" {
-  description = "Conferencing nodes provisioning configuration"
-  type = object({
-    services = object({
-      provisioning = bool
-    })
-    allowed_cidrs = object({
-      provisioning = list(string)
-    })
-  })
-}
+    # Call services default to enabled
+    enable_sip   = true
+    enable_h323  = true
+    enable_teams = true
+    enable_gmeet = true
 
-variable "apis" {
-  description = "Enabled APIs from the apis module"
-  type = object({
-    enabled_apis = map(object({
-      id = string
-    }))
-  })
+    # Optional services default to disabled
+    enable_teams_hub = false
+    enable_syslog    = false
+    enable_smtp      = false
+    enable_ldap      = false
+  }
 }

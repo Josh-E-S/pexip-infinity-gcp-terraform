@@ -1,3 +1,7 @@
+# =============================================================================
+# Images Module
+# =============================================================================
+
 terraform {
   required_version = ">= 1.0.0"
   required_providers {
@@ -11,106 +15,78 @@ terraform {
 # =============================================================================
 # Storage Bucket for Pexip Images
 # =============================================================================
+locals {
+  bucket_name = "${var.project_id}-pexip-images"
+}
+
+# Create storage bucket
 resource "google_storage_bucket" "pexip_images" {
-  name                        = "${var.project_id}-pexip-images"
-  location                    = keys(var.regions)[0] # Use first region
-  force_destroy               = true
+  count                       = var.images.upload_files ? 1 : 0
+  name                        = local.bucket_name
+  location                    = var.region
   uniform_bucket_level_access = true
+  force_destroy               = true
   depends_on                  = [var.apis]
-
-  labels = {
-    managed-by = "terraform"
-    component  = "images"
-    product    = "pexip-infinity"
-  }
 }
 
-# =============================================================================
-# Management Node Image
-# =============================================================================
-
-# Upload Management Node image to Cloud Storage if needed
-resource "google_storage_bucket_object" "mgmt_image" {
-  count  = var.pexip_images.upload_files ? 1 : 0
-  name   = "pexip-infinity-mgmt-${var.pexip_version}.tar.gz"
-  source = var.pexip_images.management.source_file
-  bucket = google_storage_bucket.pexip_images.name
-
-  timeouts {
-    create = "60m"
-  }
+# Upload management node image
+resource "google_storage_bucket_object" "management_image" {
+  count  = var.images.upload_files ? 1 : 0
+  name   = basename(var.images.management.source_file)
+  source = var.images.management.source_file
+  bucket = google_storage_bucket.pexip_images[0].name
 }
 
-# Data source for existing Management Node image
-data "google_compute_image" "mgmt_image" {
-  count   = var.pexip_images.upload_files ? 0 : 1
-  name    = var.pexip_images.management.image_name
-  project = var.project_id
+# Upload conferencing node image (used by both transcoding and proxy nodes)
+resource "google_storage_bucket_object" "conferencing_image" {
+  count  = var.images.upload_files ? 1 : 0
+  name   = basename(var.images.conferencing.source_file)
+  source = var.images.conferencing.source_file
+  bucket = google_storage_bucket.pexip_images[0].name
 }
 
-# Create Management Node image when uploading files
-resource "google_compute_image" "mgmt_image" {
-  count = var.pexip_images.upload_files ? 1 : 0
-  name  = var.pexip_images.management.image_name
+# Create management node image
+resource "google_compute_image" "management" {
+  count = var.images.upload_files ? 1 : 0
+  name  = var.images.management.image_name
 
   raw_disk {
-    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.mgmt_image[0].name}"
+    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images[0].name}/${google_storage_bucket_object.management_image[0].name}"
   }
 
   labels = {
     managed-by = "terraform"
-    component  = "management"
+    node-type  = "management"
     product    = "pexip-infinity"
-    version    = replace(var.pexip_version, ".", "-")
   }
 
   timeouts {
     create = "30m"
     delete = "30m"
   }
+
+  depends_on = [google_storage_bucket_object.management_image]
 }
 
-# =============================================================================
-# Conference Node Image
-# =============================================================================
-
-# Upload Conference Node image to Cloud Storage if needed
-resource "google_storage_bucket_object" "conference_image" {
-  count  = var.pexip_images.upload_files ? 1 : 0
-  name   = "pexip-infinity-conf-${var.pexip_version}.tar.gz"
-  source = var.pexip_images.conference.source_file
-  bucket = google_storage_bucket.pexip_images.name
-
-  timeouts {
-    create = "60m"
-  }
-}
-
-# Data source for existing Conference Node image
-data "google_compute_image" "conf_image" {
-  count   = var.pexip_images.upload_files ? 0 : 1
-  name    = var.pexip_images.conference.image_name
-  project = var.project_id
-}
-
-# Create Conference Node image when uploading files
-resource "google_compute_image" "conf_image" {
-  count = var.pexip_images.upload_files ? 1 : 0
-  name  = var.pexip_images.conference.image_name
+# Create conferencing node image (used by both transcoding and proxy nodes)
+resource "google_compute_image" "conferencing" {
+  count = var.images.upload_files ? 1 : 0
+  name  = var.images.conferencing.image_name
 
   raw_disk {
-    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images.name}/${google_storage_bucket_object.conference_image[0].name}"
+    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images[0].name}/${google_storage_bucket_object.conferencing_image[0].name}"
   }
 
   labels = {
     managed-by = "terraform"
-    component  = "conference"
+    node-type  = "conferencing"
     product    = "pexip-infinity"
-    version    = replace(var.pexip_version, ".", "-")
   }
 
   timeouts {
     create = "30m"
     delete = "30m"
   }
+
+  depends_on = [google_storage_bucket_object.conferencing_image]
 }

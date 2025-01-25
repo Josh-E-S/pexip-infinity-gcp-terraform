@@ -1,170 +1,121 @@
 # =============================================================================
-# Infrastructure Information
+# Network Outputs
 # =============================================================================
-output "infrastructure_info" {
-  description = "Information about the infrastructure deployment"
-  value = {
-    project_id = var.project_id
-    regions    = var.regions
-    machine_types = {
-      management  = module.management.instance.machine_type
-      transcoding = [for instance in module.conference.transcoding_nodes : instance.machine_type]
-      proxy       = [for instance in module.conference.proxy_nodes : instance.machine_type]
-    }
-  }
+output "networks" {
+  description = "Details of all VPC networks used for Pexip deployment, including network names, IDs, and routing configurations"
+  value       = module.network.networks
+}
+
+output "subnets" {
+  description = "Details of all subnets created or referenced in each region, including CIDR ranges and network assignments"
+  value       = module.network.subnets
 }
 
 # =============================================================================
-# Management Node
+# Image Outputs
+# =============================================================================
+output "images" {
+  description = "Details of Pexip Infinity images (management and conferencing) either created from local files or referenced from existing images"
+  value       = module.images.images
+}
+
+output "bucket" {
+  description = "Google Cloud Storage bucket details used for image upload, including name and URL. Only populated if images were uploaded from local files"
+  value       = module.images.bucket
+}
+
+# =============================================================================
+# Node Outputs
 # =============================================================================
 output "management_node" {
-  description = "Information about the management node"
-  value = {
-    name         = module.management.instance.name
-    internal_ip  = module.management.instance.network_interface[0].network_ip
-    external_ip  = try(module.management.instance.network_interface[0].access_config[0].nat_ip, null)
-    machine_type = module.management.instance.machine_type
-    zone         = module.management.instance.zone
-  }
+  description = "Detailed information about the management node, including instance name, IP addresses (public and private), and machine type"
+  value       = module.management_node.instances
 }
 
-# =============================================================================
-# Conferencing Nodes
-# =============================================================================
 output "transcoding_nodes" {
-  description = "Information about transcoding nodes"
+  description = "Map of transcoding nodes by region, including instance details like names, IP addresses, and machine types for each conferencing node"
   value = {
-    for name, instance in module.conference.transcoding_nodes : name => {
-      name         = instance.name
-      internal_ip  = instance.network_interface[0].network_ip
-      external_ip  = try(instance.network_interface[0].access_config[0].nat_ip, null)
-      machine_type = instance.machine_type
-      zone         = instance.zone
-      region       = regex("^([a-z]+-[a-z]+[0-9]+)", instance.zone)[0]
-    }
+    for region, node in module.transcoding_nodes : region => node.instances
   }
 }
 
 output "proxy_nodes" {
-  description = "Information about proxy nodes (if any)"
+  description = "Map of proxy nodes by region, including instance details like names, IP addresses, and machine types for each proxy node"
   value = {
-    for name, instance in module.conference.proxy_nodes : name => {
-      name         = instance.name
-      internal_ip  = instance.network_interface[0].network_ip
-      external_ip  = try(instance.network_interface[0].access_config[0].nat_ip, null)
-      machine_type = instance.machine_type
-      zone         = instance.zone
-      region       = regex("^([a-z]+-[a-z]+[0-9]+)", instance.zone)[0]
-    }
-  }
-}
-
-# =============================================================================
-# Network Details
-# =============================================================================
-output "network_details" {
-  description = "Information about the network configuration"
-  value = {
-    network = {
-      name = module.network.network.name
-      id   = module.network.network.id
-    }
-  }
-}
-
-# =============================================================================
-# Deployment Summary
-# =============================================================================
-output "deployment_summary" {
-  description = "Summary of the deployment"
-  value = {
-    project_id = var.project_id
-    nodes = {
-      management = {
-        count  = 1
-        region = var.mgmt_node.region
-      }
-      transcoding = {
-        count   = length(module.conference.transcoding_nodes)
-        regions = distinct([for name, node in module.conference.transcoding_nodes : regex("^([a-z]+-[a-z]+[0-9]+)", node.zone)[0]])
-      }
-      proxy = {
-        count   = length(module.conference.proxy_nodes)
-        regions = distinct([for name, node in module.conference.proxy_nodes : regex("^([a-z]+-[a-z]+[0-9]+)", node.zone)[0]])
-      }
-    }
-  }
-}
-
-# =============================================================================
-# Storage Information
-# =============================================================================
-output "storage_bucket" {
-  description = "Information about the storage bucket"
-  value = {
-    name     = module.images.storage_bucket.name
-    location = module.images.storage_bucket.location
-    url      = module.images.storage_bucket.url
-  }
-}
-
-# =============================================================================
-# Image Information
-# =============================================================================
-output "images" {
-  description = "Information about the Pexip images"
-  value = {
-    storage_bucket = module.images.storage_bucket.name
-    management = {
-      name      = module.images.mgmt_image.name
-      self_link = module.images.mgmt_image.self_link
-    }
-    conference = {
-      name      = module.images.conf_image.name
-      self_link = module.images.conf_image.self_link
-    }
+    for region, node in module.proxy_nodes : region => node.instances
   }
 }
 
 # =============================================================================
 # Connection Information
 # =============================================================================
-output "z_connection_info" {
-  description = "Connection information for the Pexip deployment"
+output "z_connection_info" { # Using z_ to ensure this is the last output
+  description = "Formatted connection details for all Pexip nodes, including admin UI URLs and SSH access information for the management node, and IP addresses for transcoding and proxy nodes"
   value       = <<-EOT
-    ================================================================================
-    Download and Setup SSH Key:
-    --------------------------------------------------------------------------------
-    # Download the private key from Secret Manager
-    gcloud secrets versions access latest --secret="${var.project_id}-pexip-ssh-key" > pexip_key
-
-    # Set correct permissions on the key file
-    chmod 600 pexip_key
-
-    ================================================================================
-    Management Node SSH Connection:
-    --------------------------------------------------------------------------------
-    ssh -i pexip_key admin@${try(module.management.instance.network_interface[0].access_config[0].nat_ip, "")}
-
-    ================================================================================
-    Management Node Web Interface:
-    --------------------------------------------------------------------------------
-    https://${try(module.management.instance.network_interface[0].access_config[0].nat_ip, "")} #Inital Installer must be run before the web interface can be accessed
-
-    ================================================================================
-    Transcoding Node IPs:
-    --------------------------------------------------------------------------------
-    %{for node_key, node in module.conference.transcoding_nodes~}
-    ${node.name}: https://${try(node.network_interface[0].access_config[0].nat_ip, "No public IP")}:8443 #Inital setup
+    Management Node:
+    %{for name, instance in module.management_node.instances~}
+    - Admin Interface: https://${instance.public_ip}:8443
+    - SSH Access: ssh admin@${instance.public_ip}
     %{endfor~}
 
-    %{if length(module.conference.proxy_nodes) > 0~}
-    ================================================================================
-    Proxy Node IPs:
-    --------------------------------------------------------------------------------
-    %{for node_key, node in module.conference.proxy_nodes~}
-    ${node.name}: https://${try(node.network_interface[0].access_config[0].nat_ip, "No public IP")}:8443 #Inital setup
+    Transcoding Nodes:
+    %{for region, node in module.transcoding_nodes~}
+    ${region}:
+    %{for name, instance in node.instances~}
+    - ${instance.name}: ${instance.public_ip}
     %{endfor~}
-    %{endif~}
-    EOT
+    %{endfor~}
+
+    Proxy Nodes:
+    %{for region, node in module.proxy_nodes~}
+    ${region}:
+    %{for name, instance in node.instances~}
+    - ${instance.name}: ${instance.public_ip}
+    %{endfor~}
+    %{endfor~}
+  EOT
+}
+
+# =============================================================================
+# Summary Outputs
+# =============================================================================
+output "summary" {
+  description = "Summary of deployed resources"
+  value = {
+    networks = {
+      for name, network in module.network.networks : name => {
+        subnets = {
+          for region, subnet in module.network.subnets : region => subnet.name
+          if subnet.network == network.name
+        }
+      }
+    }
+    nodes = {
+      management = {
+        for name, instance in module.management_node.instances : name => {
+          public_ip = instance.public_ip
+        }
+      }
+      transcoding = {
+        for region, node in module.transcoding_nodes : region => {
+          count = length(node.instances)
+          instances = {
+            for name, instance in node.instances : name => {
+              public_ip = instance.public_ip
+            }
+          }
+        }
+      }
+      proxy = {
+        for region, node in module.proxy_nodes : region => {
+          count = length(node.instances)
+          instances = {
+            for name, instance in node.instances : name => {
+              public_ip = instance.public_ip
+            }
+          }
+        }
+      }
+    }
+  }
 }

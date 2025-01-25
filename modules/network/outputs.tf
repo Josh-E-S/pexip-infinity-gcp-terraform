@@ -1,19 +1,13 @@
-output "network" {
-  description = "The VPC network"
-  value       = data.google_compute_network.network
+# =============================================================================
+# Network Module Outputs
+# =============================================================================
+
+output "networks" {
+  description = "Map of network names to their network objects"
+  value       = data.google_compute_network.networks
 }
 
-output "network_name" {
-  description = "The name of the VPC network"
-  value       = data.google_compute_network.network.name
-}
-
-output "network_id" {
-  description = "The ID of the VPC network"
-  value       = data.google_compute_network.network.id
-}
-
-output "network_self_link" {
-  description = "The URI of the VPC network"
-  value       = data.google_compute_network.network.self_link
+output "subnets" {
+  description = "Map of regions to their subnet objects"
+  value       = data.google_compute_subnetwork.subnets
 }

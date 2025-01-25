@@ -1,11 +1,15 @@
 # =============================================================================
-# Project Configuration
+# Required Variables
 # =============================================================================
 
 variable "project_id" {
   description = "(Required) GCP project ID where Pexip Infinity will be deployed"
   type        = string
 }
+
+# =============================================================================
+# Network Configuration Variables
+# =============================================================================
 
 variable "regions" {
   description = "(Required) List of regions and their network configurations. Each region must have an existing VPC network and subnet."
@@ -21,7 +25,7 @@ variable "regions" {
 }
 
 # =============================================================================
-# Management Access Configuration
+# Management Access Variables
 # =============================================================================
 
 variable "management_access" {
@@ -39,7 +43,7 @@ variable "management_access" {
 }
 
 # =============================================================================
-# Service Configuration
+# Service Configuration Variables
 # =============================================================================
 
 variable "services" {
@@ -76,7 +80,7 @@ variable "services" {
 }
 
 # =============================================================================
-# Image Configuration
+# Image Configuration Variables
 # =============================================================================
 
 variable "pexip_images" {
@@ -103,14 +107,14 @@ variable "pexip_images" {
 }
 
 # =============================================================================
-# Node Configurations
+# Node Configuration Variables
 # =============================================================================
 
 variable "management_node" {
   description = "(Required) Management node configuration. Only one management node can be deployed."
   type = object({
     name         = string           # Name for the management node
-    region       = string           # Must match one of the regions specified in var.regions
+    region       = string           # Must match one of the deployment regions
     public_ip    = optional(bool)   # (Optional) Whether to assign a public IP, defaults to true
     machine_type = optional(string) # (Optional) Defaults to n2-highcpu-4
     disk_size    = optional(number) # (Optional) Boot disk size in GB, defaults to 100

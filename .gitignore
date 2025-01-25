@@ -53,3 +53,6 @@ Thumbs.db
 **/passwords.tfvars
 **/*.password
 **/*.passwords
+
+# Python virtual environment
+.venv/

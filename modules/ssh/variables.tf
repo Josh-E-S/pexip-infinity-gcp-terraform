@@ -1,13 +1,8 @@
-variable "project_id" {
-  description = "The GCP project ID to deploy to"
-  type        = string
-}
+# =============================================================================
+# SSH Module Variables
+# =============================================================================
 
-variable "apis" {
-  description = "Enabled APIs from the apis module"
-  type = object({
-    enabled_apis = map(object({
-      id = string
-    }))
-  })
+variable "project_id" {
+  description = "The project ID where the SSH key will be stored"
+  type        = string
 }

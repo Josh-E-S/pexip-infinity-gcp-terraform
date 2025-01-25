@@ -1,3 +1,7 @@
+# =============================================================================
+# SSH Module
+# =============================================================================
+
 terraform {
   required_version = ">= 1.0.0"
   required_providers {
@@ -12,34 +16,29 @@ terraform {
   }
 }
 
-# Generate SSH key pair
+# =============================================================================
+# Node SSH Key Generation
+# =============================================================================
+
+# One SSH key pair to rule them all!
+resource "google_secret_manager_secret" "ssh_key" {
+  secret_id = "${var.project_id}-pexip-ssh-key"
+  replication {
+    auto {}
+  }
+}
+
 resource "tls_private_key" "ssh" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
-# Store private key in Secret Manager
-resource "google_secret_manager_secret" "ssh_private_key" {
-  depends_on = [var.apis]
-  secret_id  = "${var.project_id}-pexip-ssh-key"
-
-  replication {
-    auto {}
-  }
-
-  labels = {
-    terraform = "true"
-    module    = "pexip"
-  }
-}
-
-# Store the private key value
-resource "google_secret_manager_secret_version" "ssh_private_key" {
-  secret      = google_secret_manager_secret.ssh_private_key.id
+resource "google_secret_manager_secret_version" "ssh_key" {
+  secret      = google_secret_manager_secret.ssh_key.id
   secret_data = tls_private_key.ssh.private_key_pem
 }
 
-# Local for SSH key access. Sets the admin user to "admin" for GCP
-locals {
-  ssh_public_key = "admin:${tls_private_key.ssh.public_key_openssh}"
+output "public_key" {
+  description = "The public key to use for SSH access"
+  value       = tls_private_key.ssh.public_key_openssh
 }

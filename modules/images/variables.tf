@@ -1,41 +1,35 @@
+# =============================================================================
+# Images Module Variables
+# =============================================================================
+
 variable "project_id" {
-  description = "The GCP project ID to deploy to"
+  description = "The GCP project ID"
   type        = string
 }
 
-variable "regions" {
-  description = "Region configurations with subnet and zone information"
-  type = map(object({
-    subnet_name = string
-    zones       = list(string)
-  }))
-}
-
-variable "pexip_version" {
-  description = "Version of Pexip Infinity to deploy"
+variable "region" {
+  description = "Region for storing images"
   type        = string
 }
 
-variable "pexip_images" {
-  description = "Pexip Infinity image configurations"
+# Image Configuration
+variable "images" {
+  description = "Pexip Infinity image configuration"
   type = object({
     upload_files = bool
     management = object({
-      source_file = optional(string)
-      image_name  = string
+      source_file = optional(string) # Required if upload_files = true
+      image_name  = string           # Required if upload_files = false
     })
-    conference = object({
-      source_file = optional(string)
-      image_name  = string
+    conferencing = object({
+      source_file = optional(string) # Required if upload_files = true
+      image_name  = string           # Required if upload_files = false
     })
   })
 }
 
+# APIs
 variable "apis" {
-  description = "Enabled APIs from the apis module"
-  type = object({
-    enabled_apis = map(object({
-      id = string
-    }))
-  })
+  description = "APIs module output"
+  type        = any
 }

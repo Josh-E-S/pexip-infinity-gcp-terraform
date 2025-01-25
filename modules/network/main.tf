@@ -1,3 +1,7 @@
+# =============================================================================
+# Network Module
+# =============================================================================
+
 terraform {
   required_version = ">= 1.0.0"
   required_providers {
@@ -9,216 +13,197 @@ terraform {
 }
 
 # =============================================================================
-# VPC Network
+# Network Data Sources
 # =============================================================================
-data "google_compute_network" "network" {
-  name = var.network_name
+locals {
+  networks = distinct([for r in var.regions : r.network])
+}
+
+data "google_compute_network" "networks" {
+  for_each = toset([for r in var.regions : r.network])
+  project  = var.project_id
+  name     = each.value
+}
+
+data "google_compute_subnetwork" "subnets" {
+  for_each = { for idx, r in var.regions : r.region => r }
+  project  = var.project_id
+  name     = each.value.subnet_name
+  region   = each.key
 }
 
 # =============================================================================
-# Management Node Firewall Rules
+# Management Node Inbound Rules
 # =============================================================================
+
+# Admin UI Access - create for each network
 resource "google_compute_firewall" "mgmt_admin" {
-  depends_on    = [var.apis]
-  name          = "allow-mgmt-admin"
-  network       = data.google_compute_network.network.name
-  description   = "Management node administrative access (Web UI)"
+  for_each      = toset(local.networks)
+  name          = "${local.firewall_prefix}-mgmt-admin-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.management.admin.description
   direction     = "INGRESS"
-  source_ranges = var.mgmt_node.allowed_cidrs.admin_ui
-  target_tags   = [var.mgmt_node_name]
+  source_ranges = var.management_access.cidr_ranges
+  target_tags   = [local.tags.management]
 
   allow {
     protocol = "tcp"
-    ports    = var.mgmt_services.ports.admin_ui.tcp
+    ports    = local.ports.management.admin.tcp
   }
 }
 
+# SSH Access - create for each network
 resource "google_compute_firewall" "mgmt_ssh" {
-  count         = var.mgmt_node.services.ssh ? 1 : 0
-  depends_on    = [var.apis]
-  name          = "pexip-allow-mgmt-ssh"
-  network       = data.google_compute_network.network.name
-  description   = "Allow SSH access to management node"
+  for_each      = var.services.enable_ssh ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-mgmt-ssh-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.management.ssh.description
   direction     = "INGRESS"
-  source_ranges = var.mgmt_node.allowed_cidrs.ssh
-  target_tags   = [var.mgmt_node_name]
+  source_ranges = var.management_access.cidr_ranges
+  target_tags   = [local.tags.management, local.tags.transcoding, local.tags.proxy]
 
   allow {
     protocol = "tcp"
-    ports    = ["22"]
+    ports    = local.ports.management.ssh.tcp
   }
 }
 
-resource "google_compute_firewall" "mgmt_directory" {
-  count         = var.mgmt_node.services.directory ? 1 : 0
-  depends_on    = [var.apis]
-  name          = "pexip-allow-mgmt-directory"
-  network       = data.google_compute_network.network.name
-  description   = "Allow directory service access to management node"
+# Conferencing Node Provisioning Access - create for each network
+resource "google_compute_firewall" "mgmt_conf_provisioning" {
+  for_each      = var.services.enable_conf_provisioning ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-mgmt-conf-provisioning-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.management.conf_provisioning.description
   direction     = "INGRESS"
-  source_ranges = var.mgmt_node.service_cidrs.directory
-  target_tags   = [var.mgmt_node_name]
+  source_ranges = var.management_access.cidr_ranges
+  target_tags   = [local.tags.transcoding, local.tags.proxy]
 
   allow {
     protocol = "tcp"
-    ports    = ["389", "636"] # Both LDAP and LDAPS
-  }
-}
-
-resource "google_compute_firewall" "mgmt_smtp" {
-  count         = var.mgmt_node.services.smtp ? 1 : 0
-  depends_on    = [var.apis]
-  name          = "pexip-allow-mgmt-smtp"
-  network       = data.google_compute_network.network.name
-  description   = "Allow SMTP access to management node"
-  direction     = "INGRESS"
-  source_ranges = var.mgmt_node.service_cidrs.smtp
-  target_tags   = [var.mgmt_node_name]
-
-  allow {
-    protocol = "tcp"
-    ports    = ["25", "587"] # SMTP and Submission
-  }
-}
-
-resource "google_compute_firewall" "mgmt_syslog" {
-  count         = var.mgmt_node.services.syslog ? 1 : 0
-  depends_on    = [var.apis]
-  name          = "pexip-allow-mgmt-syslog"
-  network       = data.google_compute_network.network.name
-  description   = "Allow Syslog access to management node"
-  direction     = "INGRESS"
-  source_ranges = var.mgmt_node.service_cidrs.syslog
-  target_tags   = [var.mgmt_node_name]
-
-  allow {
-    protocol = "udp"
-    ports    = ["514"] # Syslog
+    ports    = local.ports.management.conf_provisioning.tcp
   }
 }
 
 # =============================================================================
-# Conferencing Node Firewall Rules
+# Call Services (Inbound Rules)
 # =============================================================================
 
-# Media Traffic for Transcoding Nodes
-resource "google_compute_firewall" "transcoding_media" {
-  depends_on    = [var.apis]
-  name          = "allow-transcoding-media"
-  network       = data.google_compute_network.network.name
-  description   = "Transcoding node media traffic"
+# SIP - create for each network
+resource "google_compute_firewall" "sip" {
+  for_each      = var.services.enable_sip ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-sip-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.conferencing.sip.description
   direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = [var.transcoding_node_name]
-
-  allow {
-    protocol = "udp"
-    ports    = ["${var.transcoding_services.ports.media.udp_range.start}-${var.transcoding_services.ports.media.udp_range.end}"]
-  }
-}
-
-# Media Traffic for Proxy Nodes
-resource "google_compute_firewall" "proxy_media" {
-  depends_on    = [var.apis]
-  name          = "allow-proxy-media"
-  network       = data.google_compute_network.network.name
-  description   = "Proxy node media traffic"
-  direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = [var.proxy_node_name]
-
-  allow {
-    protocol = "udp"
-    ports    = ["${var.proxy_services.ports.media.udp_range.start}-${var.proxy_services.ports.media.udp_range.end}"]
-  }
-}
-
-# Signaling Traffic for All Conference Nodes
-resource "google_compute_firewall" "signaling" {
-  depends_on    = [var.apis]
-  name          = "allow-signaling"
-  network       = data.google_compute_network.network.name
-  description   = "Conference node signaling traffic"
-  direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = [var.transcoding_node_name, var.proxy_node_name]
-
-  dynamic "allow" {
-    for_each = {
-      sip_tcp  = var.transcoding_services.ports.signaling.sip_tcp
-      h323_tcp = var.transcoding_services.ports.signaling.h323_tcp
-      webrtc   = var.transcoding_services.ports.signaling.webrtc
-    }
-    content {
-      protocol = "tcp"
-      ports    = allow.value
-    }
-  }
-
-  dynamic "allow" {
-    for_each = {
-      sip_udp  = var.transcoding_services.ports.signaling.sip_udp
-      h323_udp = var.transcoding_services.ports.signaling.h323_udp
-    }
-    content {
-      protocol = "udp"
-      ports    = allow.value
-    }
-  }
-}
-
-# Provisioning Access for Conferencing Nodes
-resource "google_compute_firewall" "pexip_allow_provisioning" {
-  count         = var.conferencing_nodes_provisioning.services.provisioning ? 1 : 0
-  depends_on    = [var.apis]
-  name          = "pexip-allow-provisioning"
-  network       = data.google_compute_network.network.name
-  description   = "Allow access to conferencing node provisioning interface"
-  direction     = "INGRESS"
-  source_ranges = var.conferencing_nodes_provisioning.allowed_cidrs.provisioning
-  target_tags   = [var.transcoding_node_name, var.proxy_node_name]
+  source_ranges = local.default_ranges
+  target_tags   = [local.tags.transcoding, local.tags.proxy]
 
   allow {
     protocol = "tcp"
-    ports    = ["8443"]
+    ports    = local.ports.conferencing.sip.tcp
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = local.ports.conferencing.sip.udp
   }
 }
 
-# Internal Communication between Nodes
-resource "google_compute_firewall" "internal" {
-  depends_on  = [var.apis]
-  name        = "allow-internal"
-  network     = data.google_compute_network.network.name
-  description = "Internal communication between Pexip nodes"
-  direction   = "INGRESS"
-  source_tags = [var.mgmt_node_name, var.transcoding_node_name, var.proxy_node_name]
-  target_tags = [var.mgmt_node_name, var.transcoding_node_name, var.proxy_node_name]
+# H.323 - create for each network
+resource "google_compute_firewall" "h323" {
+  for_each      = var.services.enable_h323 ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-h323-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.conferencing.h323.description
+  direction     = "INGRESS"
+  source_ranges = local.default_ranges
+  target_tags   = [local.tags.transcoding, local.tags.proxy]
 
   allow {
     protocol = "tcp"
-    ports    = ["443"]
+    ports    = local.ports.conferencing.h323.tcp
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = local.ports.conferencing.h323.udp
   }
 }
 
-# Optional Services for Transcoding Nodes
-resource "google_compute_firewall" "transcoding_services" {
-  depends_on    = [var.apis]
-  count         = var.transcoding_services.enable_services.one_touch_join || var.transcoding_services.enable_services.event_sink ? 1 : 0
-  name          = "allow-transcoding-services"
-  network       = data.google_compute_network.network.name
-  description   = "Optional services for transcoding nodes"
+# Teams - create for each network
+resource "google_compute_firewall" "teams" {
+  for_each      = var.services.enable_teams ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-teams-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.conferencing.teams.description
   direction     = "INGRESS"
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = [var.transcoding_node_name]
+  source_ranges = local.default_ranges
+  target_tags   = [local.tags.transcoding, local.tags.proxy]
 
-  dynamic "allow" {
-    for_each = {
-      one_touch_join = var.transcoding_services.enable_services.one_touch_join ? var.transcoding_services.ports.services.one_touch_join : []
-      event_sink     = var.transcoding_services.enable_services.event_sink ? var.transcoding_services.ports.services.event_sink : []
-    }
-    content {
-      protocol = "tcp"
-      ports    = allow.value
-    }
+  allow {
+    protocol = "tcp"
+    ports    = local.ports.conferencing.teams.tcp
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = local.ports.conferencing.teams.udp
+  }
+}
+
+# Google Meet - create for each network
+resource "google_compute_firewall" "gmeet" {
+  for_each      = var.services.enable_gmeet ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-gmeet-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.conferencing.gmeet.description
+  direction     = "INGRESS"
+  source_ranges = local.default_ranges
+  target_tags   = [local.tags.transcoding, local.tags.proxy]
+
+  allow {
+    protocol = "tcp"
+    ports    = local.ports.conferencing.gmeet.tcp
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = local.ports.conferencing.gmeet.udp
+  }
+}
+
+# =============================================================================
+# Internal Node Communication
+# =============================================================================
+
+# Allow IPsec communication between nodes (IKE and ESP)
+resource "google_compute_firewall" "internal_node" {
+  for_each = data.google_compute_network.networks
+
+  name    = format("%s-internal-%s", local.firewall_prefix, substr(sha256(each.key), 0, 4))
+  network = each.value.name
+  project = var.project_id
+
+  description = local.ports.internal.description
+
+  source_tags = [local.tags.management, local.tags.transcoding, local.tags.proxy]
+  target_tags = [local.tags.management, local.tags.transcoding, local.tags.proxy]
+
+  # Allow ISAKMP (IKE) for IPsec key exchange
+  allow {
+    protocol = "udp"
+    ports    = local.ports.internal.udp
+  }
+
+  # Allow ESP (protocol 50) for IPsec data
+  allow {
+    protocol = "esp"
   }
 }
