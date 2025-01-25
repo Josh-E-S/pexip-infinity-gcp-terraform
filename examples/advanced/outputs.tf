@@ -63,7 +63,7 @@ output "z_connection_info" { # Using z_ to ensure this is the last output
   value       = <<-EOT
     ================================================================================
     Download and Setup SSH Key:
-    --------------------------------------------------------------------------------
+    ================================================================================
     # Download the private key from Secret Manager
     gcloud secrets versions access latest --secret="${var.project_id}-pexip-ssh-key" > pexip_key
 
@@ -72,13 +72,13 @@ output "z_connection_info" { # Using z_ to ensure this is the last output
 
     ================================================================================
     Management Node:
-    --------------------------------------------------------------------------------
+    ================================================================================
     Web Interface: https://${values(module.pexip.management_node)[0].public_ip}
     SSH Access: ssh -i pexip_key admin@${values(module.pexip.management_node)[0].public_ip}
 
     ================================================================================
     Transcoding Node IPs:
-    --------------------------------------------------------------------------------
+    ================================================================================
     %{for region, instances in module.pexip.transcoding_nodes~}
     ${region}:
     %{for name, instance in instances~}
@@ -88,7 +88,7 @@ output "z_connection_info" { # Using z_ to ensure this is the last output
 
     ================================================================================
     Proxy Node IPs:
-    --------------------------------------------------------------------------------
+    ================================================================================
     %{for region, instances in module.pexip.proxy_nodes~}
     ${region}:
     %{for name, instance in instances~}

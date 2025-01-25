@@ -58,23 +58,33 @@ management_access = {
 # =============================================================================
 # Pexip Image Configuration
 # =============================================================================
-# Configure the Pexip Infinity images to use
-# Options:
-#  - Upload new images (upload_files = true)
-#  - Use existing images (upload_files = false)
-# Note: Image paths should be absolute paths to .tar.gz files
+# There are two options for configuring Pexip Infinity images:
 
+# Option 1: Using existing images from your GCP project
+# Use this if you have already uploaded and created the images in GCP
 pexip_images = {
-  upload_files = true
+  upload_files = false  # Set to false when using existing GCP images
   management = {
-    source_file = "/path/to/Pexip_Infinity_Management_Node_v30.tar.gz"
-    image_name  = "pexip-infinity-management-v30"
+    image_name  = "pexip-infinity-management-v30"  # Name of existing management node image in GCP
   }
   conferencing = {
-    source_file = "/path/to/Pexip_Infinity_Conferencing_Node_v30.tar.gz"
-    image_name  = "pexip-infinity-conferencing-v30"
+    image_name  = "pexip-infinity-conferencing-v30"  # Name of existing conferencing node image in GCP
   }
 }
+
+# Option 2: Uploading new images from local files
+# Uncomment and modify this block if you want to upload new images from local .tar.gz files
+# pexip_images = {
+#   upload_files = true   # Set to true to upload new images
+#   management = {
+#     source_file = "/path/to/Pexip_Infinity_Management_Node_v30.tar.gz"  # Full path to local management node image
+#     image_name  = "pexip-infinity-management-v30"  # Name to give the image in GCP
+#   }
+#   conferencing = {
+#     source_file = "/path/to/Pexip_Infinity_Conferencing_Node_v30.tar.gz"  # Full path to local conferencing node image
+#     image_name  = "pexip-infinity-conferencing-v30"  # Name to give the image in GCP
+#   }
+# }
 
 # =============================================================================
 # Service Configuration
