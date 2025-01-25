@@ -68,6 +68,7 @@ module "management_node" {
   network_id     = [for r in module.network.networks : r.id if r.name == local.mgmt_network][0]
   subnet_id      = [for s in module.network.subnets : s.id if s.region == var.management_node.region][0]
   public_ip      = var.management_node.public_ip
+  machine_type   = var.management_node.machine_type
   image_name     = module.images.images.management.name
   apis           = module.apis
   ssh_public_key = module.ssh.public_key
