@@ -1,6 +1,6 @@
 # This project is for community use. This is not an official Pexip repo.
 
-# Terraform Google Pexip Infinity
+# Terraform Google Pexip Infinity 🚀
 
 A Terraform module for deploying Pexip Infinity conferencing platform on Google Cloud. This module handles the infrastructure setup including networks, compute instances, images, and firewall rules.
 
