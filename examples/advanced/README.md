@@ -1,113 +1,176 @@
-# Advanced Pexip Infinity Deployment Example
+Advanced Pexip Infinity Deployment Example
+=====================================
 
-This example demonstrates a full-featured deployment of Pexip Infinity on Google Cloud Platform (GCP). It includes multi-region support, configurable management access, and automated node deployment.
+This example demonstrates a multi-region, full-featured deployment of Pexip Infinity on Google Cloud Platform (GCP). It creates a management node, multiple transcoding nodes across regions, and proxy nodes for optimal global coverage.
 
-## Architecture Overview
+### Architecture Overview
 
 This deployment creates:
-- Management Node in the primary region
-- Transcoding Nodes across multiple regions
-- Proxy Nodes for edge connectivity
-- Secure firewall rules for management and media traffic
-- GCS bucket for Pexip image storage
+- 1 Management Node with enhanced specifications
+- Multiple Transcoding Nodes across regions
+- Proxy Nodes for call signaling
+- Required firewall rules for all Pexip services
+- Uses existing Pexip images (no image upload required)
 
-## Prerequisites
+### Prerequisites
 
 1. A GCP project with billing enabled
-2. The following APIs enabled:
+2. Required APIs (automatically enabled by the module):
    - Compute Engine API
    - Cloud Resource Manager API
    - IAM API
    - Secret Manager API
-   - Storage API
 
-3. Pexip Infinity images:
-   - Management Node image (.tar.gz)
-   - Conferencing Node image (.tar.gz)
+3. Existing Network Infrastructure:
+   - VPC network spanning multiple regions
+   - Subnets in each target region
 
-4. Network Infrastructure:
-   - VPC network
-   - Subnets in each deployment region
-   - External IP addresses (if using public IPs)
+4. Pexip Infinity images:
+   - Option 1: Images already in your GCP project (specify source_image)
+   - Option 2: Local .tar.gz files to upload (specify source_file)
 
-## Usage
+### Required Configuration
 
-1. Copy `terraform.tfvars.example` to `terraform.tfvars`:
-   ```bash
-   cp terraform.tfvars.example terraform.tfvars
+Copy `terraform.tfvars.example` to `terraform.tfvars` and configure:
+
+1. **Project and Network**
+   ```hcl
+   project_id = "your-project-id"
+
+   regions = [
+     {
+       region      = "us-central1"    # Primary region
+       network     = "pexip-network"  # VPC network name
+       subnet_name = "pexip-subnet-central1"
+     },
+     {
+       region      = "us-east1"       # Secondary region
+       network     = "pexip-network"
+       subnet_name = "pexip-subnet-east1"
+     },
+     {
+       region      = "europe-west1"   # European region
+       network     = "pexip-network"
+       subnet_name = "pexip-subnet-europe1"
+     }
+   ]
    ```
 
-2. Update `terraform.tfvars` with your configuration:
-   - Set your GCP project ID
-   - Configure network settings
-   - Set management access CIDR ranges
-   - Update Pexip image paths
-   - Configure node specifications
+2. **Image Configuration**
+   ```hcl
+   pexip_images = {
+     upload_files = false
+     management = {
+       image_name = "pexip-infinity-management-v36"
+     }
+     conferencing = {
+       image_name = "pexip-infinity-conferencing-v36"
+     }
+   }
+   ```
 
-3. Initialize Terraform:
+3. **Node Configuration**
+   ```hcl
+   management_node = {
+     name         = "mgmt-primary"
+     region       = "us-central1"
+     public_ip    = true
+     machine_type = "n2-highcpu-8"    # Enhanced for larger deployments
+     disk_size    = 150               # Larger disk for logs
+   }
+
+   transcoding_nodes = {
+     regional_config = {
+       "us-central1" = {
+         count        = 1
+         name         = "transcode-central-1"
+         public_ip    = true
+         machine_type = "n2-highcpu-8"
+         disk_size    = 50
+       },
+       "us-east1" = {
+         count        = 1
+         name         = "transcode-east-1"
+         public_ip    = true
+         machine_type = "n2-highcpu-8"
+         disk_size    = 50
+       }
+     }
+   }
+
+   proxy_nodes = {
+     regional_config = {
+       "us-central1" = {
+         count        = 1
+         name         = "proxy-central"
+         public_ip    = true
+         machine_type = "n2-highcpu-4"
+         disk_size    = 50
+       }
+     }
+   }
+   ```
+
+### Default Values
+
+The module provides defaults for:
+
+1. **Management Access Example**
+   ```hcl
+   management_access = {
+     cidr_ranges = [
+       "10.0.0.0/8",        # Internal corporate network
+       "192.168.0.0/16",    # VPN network
+       "203.0.113.0/24"     # Office public network
+     ]
+   }
+   ```
+
+2. **Services**
+   ```hcl
+   services = {
+     enable_ssh               = true
+     enable_conf_provisioning = true
+     enable_sip              = true
+     enable_h323            = true
+     enable_teams           = true
+     enable_gmeet           = true
+     enable_teams_hub        = true
+     enable_syslog           = true
+     enable_smtp             = true
+     enable_ldap             = true
+   }
+   ```
+
+### Usage
+
+1. Initialize and deploy:
    ```bash
    terraform init
-   ```
-
-4. Review the deployment plan:
-   ```bash
    terraform plan
-   ```
-
-5. Apply the configuration:
-   ```bash
    terraform apply
    ```
 
-## Security Features
+## Post-Deployment
 
-### Management Access
-- SSH (port 22)
-- Admin UI (port 443)
-- Provisioning (port 8443)
-- Access restricted to specified CIDR ranges
+After successful deployment, the module will output:
+1. SSH key retrieval instructions
+2. Management node connection details (SSH and web interface)
+3. Transcoding and proxy node details per region
+4. Network and subnet information
+5. Image and disk information
 
-### Media Services
-- SIP/SIP-TLS (ports 5060/5061)
-- H.323 (ports 1720/1719)
-- Microsoft Teams integration
-- Google Meet integration
-- Open to 0.0.0.0/0 by default
+Use these details to:
+1. Run the initial installer on the management node
+2. Access the management interface to complete Pexip configuration
+3. Provision transcoding and proxy nodes
+   - Configure your Pexip Infinity deployment following the [Pexip documentation](https://docs.pexip.com/admin/admin_intro.htm)
 
-### Internal Communication
-- Secure IPsec between nodes
-- Automated firewall rule configuration
+### Clean Up
 
-## Node Types
-
-### Management Node
-- System configuration and licensing
-- Conference scheduling
-- One per deployment
-
-### Transcoding Nodes
-- Media processing
-- Conference hosting
-- Scalable across regions
-
-### Proxy Nodes
-- Call signaling
-- Media forwarding
-- Edge connectivity
-
-## Outputs
-
-After successful deployment, you'll receive:
-- Management node access details
-- Node IP addresses
-- Network configuration summary
-- Connection instructions
-
-## Clean Up
-
-To destroy the deployment:
+To remove all resources:
 ```bash
 terraform destroy
 ```
 
-**Note:** This will remove all resources including stored data. Ensure you have backups if needed.
+**Note:** This will delete all resources.
