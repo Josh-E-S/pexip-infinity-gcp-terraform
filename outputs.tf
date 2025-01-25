@@ -2,12 +2,12 @@
 # Network Outputs
 # =============================================================================
 output "networks" {
-  description = "Network configurations"
+  description = "Details of all VPC networks used for Pexip deployment, including network names, IDs, and routing configurations"
   value       = module.network.networks
 }
 
 output "subnets" {
-  description = "Subnet configurations"
+  description = "Details of all subnets created or referenced in each region, including CIDR ranges and network assignments"
   value       = module.network.subnets
 }
 
@@ -15,12 +15,12 @@ output "subnets" {
 # Image Outputs
 # =============================================================================
 output "images" {
-  description = "Created or referenced Pexip images"
+  description = "Details of Pexip Infinity images (management and conferencing) either created from local files or referenced from existing images"
   value       = module.images.images
 }
 
 output "bucket" {
-  description = "GCS bucket details (if created)"
+  description = "Google Cloud Storage bucket details used for image upload, including name and URL. Only populated if images were uploaded from local files"
   value       = module.images.bucket
 }
 
@@ -28,19 +28,19 @@ output "bucket" {
 # Node Outputs
 # =============================================================================
 output "management_node" {
-  description = "Management node details"
+  description = "Detailed information about the management node, including instance name, IP addresses (public and private), and machine type"
   value       = module.management_node.instances
 }
 
 output "transcoding_nodes" {
-  description = "Transcoding nodes details"
+  description = "Map of transcoding nodes by region, including instance details like names, IP addresses, and machine types for each conferencing node"
   value = {
     for region, node in module.transcoding_nodes : region => node.instances
   }
 }
 
 output "proxy_nodes" {
-  description = "Proxy nodes details"
+  description = "Map of proxy nodes by region, including instance details like names, IP addresses, and machine types for each proxy node"
   value = {
     for region, node in module.proxy_nodes : region => node.instances
   }
@@ -50,7 +50,7 @@ output "proxy_nodes" {
 # Connection Information
 # =============================================================================
 output "z_connection_info" { # Using z_ to ensure this is the last output
-  description = "Connection information for Pexip nodes"
+  description = "Formatted connection details for all Pexip nodes, including admin UI URLs and SSH access information for the management node, and IP addresses for transcoding and proxy nodes"
   value       = <<-EOT
     Management Node:
     %{for name, instance in module.management_node.instances~}
