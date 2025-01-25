@@ -1,29 +1,37 @@
-# Basic Pexip Infinity Deployment
-# This example shows the minimum required configuration to deploy Pexip Infinity
+# =============================================================================
+# Basic Pexip Infinity Deployment Example
+# =============================================================================
+# This example demonstrates the minimum required configuration for a basic
+# single-region deployment with one management node and one transcoding node.
 
 module "pexip" {
   source = "../../"  # This will be terraform-google-modules/pexip-infinity/google in production
 
-  # Required: Project configuration
-  project_id = var.project_id
-  
-  # Required: Network configuration (single region)
-  regions = var.regions
+  # =============================================================================
+  # Required Configuration
+  # =============================================================================
 
-  # Required: Image configuration (using existing images)
+  # Project Configuration
+  project_id = var.project_id
+
+  # Network Configuration
+  regions = var.regions
+  management_access = var.management_access  # CIDR ranges for management access
+
+  # Image Configuration - Using existing images
   pexip_images = {
-    upload_files = false
+    upload_files = false  # Use existing images
     management = {
-      image_name = var.management_image_name
+      image_name = var.pexip_images.management.image_name
     }
     conferencing = {
-      image_name = var.conferencing_image_name
+      image_name = var.pexip_images.conferencing.image_name
     }
   }
 
-  # Required: Management node
-  management_node = var.management_node
-
-  # Optional but recommended: Transcoding nodes
+  # Node Configuration
+  management_node   = var.management_node
   transcoding_nodes = var.transcoding_nodes
+
+  # The module will use default values for all other optional parameters
 }

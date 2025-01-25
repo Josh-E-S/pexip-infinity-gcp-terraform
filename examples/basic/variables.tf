@@ -1,15 +1,11 @@
 # =============================================================================
-# Project Configuration
+# Required Variables
 # =============================================================================
 
 variable "project_id" {
   description = "(Required) GCP project ID where Pexip Infinity will be deployed"
   type        = string
 }
-
-# =============================================================================
-# Network Configuration
-# =============================================================================
 
 variable "regions" {
   description = "(Required) List of regions and their network configurations. Each region must have an existing VPC network and subnet."
@@ -18,26 +14,26 @@ variable "regions" {
     network     = string     # Name of existing VPC network
     subnet_name = string     # Name of existing subnet in the VPC
   }))
-  default = [{ region = "us-central1", network = "pexip-infinity", subnet_name = "subnet-1" }] # Set default if needed
 }
 
-# =============================================================================
-# Image Configuration
-# =============================================================================
-
-variable "management_image_name" {
-  description = "(Required) Name of the existing Pexip Infinity Management Node image"
-  type        = string
+variable "pexip_images" {
+  description = "(Required) Configuration for Pexip Infinity images"
+  type = object({
+    management = object({
+      image_name = string    # Name of existing management node image
+    })
+    conferencing = object({
+      image_name = string    # Name of existing conferencing node image
+    })
+  })
 }
 
-variable "conferencing_image_name" {
-  description = "(Required) Name of the existing Pexip Infinity Conferencing Node image"
-  type        = string
+variable "management_access" {
+  description = "(Required) CIDR ranges for management access (admin UI, SSH, provisioning)"
+  type = object({
+    cidr_ranges = list(string)
+  })
 }
-
-# =============================================================================
-# Node Configuration
-# =============================================================================
 
 variable "management_node" {
   description = "(Required) Management node configuration"
@@ -46,11 +42,6 @@ variable "management_node" {
     region    = string
     public_ip = bool
   })
-  default = { # Set default if needed
-    name      = "mgmt-1"
-    region    = "us-central1"
-    public_ip = true
-  }
 }
 
 variable "transcoding_nodes" {
@@ -59,7 +50,6 @@ variable "transcoding_nodes" {
     regional_config = map(object({
       count     = number
       name      = string
-      machine_type = string
       public_ip = bool
     }))
   })
@@ -68,7 +58,6 @@ variable "transcoding_nodes" {
       "us-central1" = {
         count     = 1
         name      = "transcode"
-        machine_type = "n2-standard-2"
         public_ip = true
       }
     }

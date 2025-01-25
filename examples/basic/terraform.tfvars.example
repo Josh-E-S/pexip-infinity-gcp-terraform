@@ -1,47 +1,46 @@
-# ---------------------------------------------------------------------------------------------------------------------
-# REQUIRED PARAMETERS
-# These variables must be set when using this module.
-# ---------------------------------------------------------------------------------------------------------------------
+# =============================================================================
+# Required Parameters
+# =============================================================================
 
+# GCP project ID where Pexip Infinity will be deployed
 project_id = "your-project-id"
 
-# ---------------------------------------------------------------------------------------------------------------------
-# NETWORK AND SUBNET CONFIGURATION
-# Specify the network and subnet configuration for each region
-# ---------------------------------------------------------------------------------------------------------------------
-
+# Network Configuration - Must have an existing VPC network and subnet
 regions = [{
-  region      = "us-central1"
-  network     = "pexip-infinity"
-  subnet_name = "pexip-subnet-central1"
+  region      = "us-central1"     # Primary region for deployment
+  network     = "pexip-infinity"  # Name of existing VPC network
+  subnet_name = "pexip-subnet"    # Name of existing subnet in the VPC
 }]
 
-# ---------------------------------------------------------------------------------------------------------------------
-# IMAGE CONFIGURATION
-# Names of existing Pexip images
-# ---------------------------------------------------------------------------------------------------------------------
-
-management_image_name   = "pexip-infinity-management-v30"
-conferencing_image_name = "pexip-infinity-conferencing-v30"
-
-# ---------------------------------------------------------------------------------------------------------------------
-# NODE CONFIGURATION
-# Configure management and transcoding nodes
-# ---------------------------------------------------------------------------------------------------------------------
-
-management_node = {
-  name      = "mgmt-1"
-  region    = "us-central1"
-  public_ip = true
+# Image Configuration - Using existing Pexip images in your project
+pexip_images = {
+  management = {
+    image_name = "pexip-infinity-management-v30"  # Name of existing management node image
+  }
+  conferencing = {
+    image_name = "pexip-infinity-conferencing-v30"  # Name of existing conferencing node image
+  }
 }
 
+# Management Access Configuration - Restrict these CIDR ranges in production!
+management_access = {
+  cidr_ranges = ["0.0.0.0/0"]  # Replace with your allowed IP ranges
+}
+
+# Management Node Configuration
+management_node = {
+  name      = "mgmt-1"        # Name prefix for the instance
+  region    = "us-central1"   # Must match one of the regions above
+  public_ip = true           # Whether to assign a public IP
+}
+
+# Transcoding Node Configuration (Optional)
 transcoding_nodes = {
   regional_config = {
     "us-central1" = {
-      count     = 1
-      name      = "transcode"
-      public_ip = true
-      machine_type = "n2-highcpu-8"
+      count     = 1           # Number of nodes to deploy
+      name      = "transcode" # Name prefix for instances
+      public_ip = true       # Whether to assign public IPs
     }
   }
 }

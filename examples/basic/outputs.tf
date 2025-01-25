@@ -1,42 +1,5 @@
 # =============================================================================
-# Connection Information
-# =============================================================================
-output "z_connection_info" {
-  description = "Connection information for the Pexip deployment"
-  value       = <<-EOT
-    ================================================================================
-    Download and Setup SSH Key:
-    --------------------------------------------------------------------------------
-    # Download the private key from Secret Manager
-    gcloud secrets versions access latest --secret="${var.project_id}-pexip-ssh-key" > pexip_key
-
-    # Set correct permissions on the key file
-    chmod 600 pexip_key
-
-    ================================================================================
-    Management Node:
-    --------------------------------------------------------------------------------
-    Web Interface: https://${values(module.pexip.management_node)[0].public_ip}
-    SSH Access: ssh -i pexip_key admin@${values(module.pexip.management_node)[0].public_ip}
-
-    ================================================================================
-    Transcoding Node IPs:
-    --------------------------------------------------------------------------------
-    %{for region, instances in module.pexip.transcoding_nodes~}
-    ${region}:
-    %{for name, instance in instances~}
-    ${name}: https://${instance.public_ip}:8443 #Initial bootstrap
-    %{endfor~}
-    %{endfor~}
-
-    ================================================================================
-    Note: Initial configuration of the Management Node is required before accessing
-    the web interface. Please refer to Pexip documentation for setup instructions.
-    EOT
-}
-
-# =============================================================================
-# Detailed Resource Information
+# Essential Outputs
 # =============================================================================
 
 output "management_node" {
@@ -49,12 +12,40 @@ output "transcoding_nodes" {
   value       = module.pexip.transcoding_nodes
 }
 
-output "networks" {
-  description = "Network configurations"
-  value       = module.pexip.networks
-}
+output "z_connection_info" {  # Using z_ to ensure this is the last output
+  description = "Connection information and next steps" 
+  value       = <<-EOT
+    ================================================================================
+    Pexip Infinity Deployment Information
+    ================================================================================
 
-output "images" {
-  description = "Pexip images used"
-  value       = module.pexip.images
+    Download and Setup SSH Key:
+    --------------------------------------------------------------------------------
+    # Download the private key from Secret Manager
+    gcloud secrets versions access latest --secret="${var.project_id}-pexip-ssh-key" > pexip_key
+
+    # Set correct permissions on the key file
+    chmod 600 pexip_key
+
+    Management Node Access:
+    --------------------------------------------------------------------------------
+    %{for name, instance in module.pexip.management_node~}
+    Web Interface: https://${instance.public_ip}
+    SSH Access: ssh -i pexip_key admin@${instance.public_ip}
+    %{endfor~}
+
+    Transcoding Node Access:
+    --------------------------------------------------------------------------------
+    %{for region, instances in module.pexip.transcoding_nodes~}
+    ${region}:
+    %{for name, instance in instances~}
+    ${name}: https://${instance.public_ip}:8443 #Initial bootstrap
+    SSH Access: ssh -i pexip_key admin@${instance.public_ip}
+    %{endfor~}
+    %{endfor~}
+
+    Note: Initial configuration of the Management Node is required before accessing
+    the web interface. Please refer to Pexip documentation for setup instructions.
+    ================================================================================
+    EOT
 }
