@@ -10,9 +10,9 @@ variable "project_id" {
 variable "regions" {
   description = "(Required) List of regions and their network configurations. Each region must have an existing VPC network and subnet."
   type = list(object({
-    region      = string     # Region name (e.g., us-central1)
-    network     = string     # Name of existing VPC network
-    subnet_name = string     # Name of existing subnet in the VPC
+    region      = string # Region name (e.g., us-central1)
+    network     = string # Name of existing VPC network
+    subnet_name = string # Name of existing subnet in the VPC
   }))
 }
 
@@ -20,10 +20,10 @@ variable "pexip_images" {
   description = "(Required) Configuration for Pexip Infinity images"
   type = object({
     management = object({
-      image_name = string    # Name of existing management node image
+      image_name = string # Name of existing management node image
     })
     conferencing = object({
-      image_name = string    # Name of existing conferencing node image
+      image_name = string # Name of existing conferencing node image
     })
   })
 }

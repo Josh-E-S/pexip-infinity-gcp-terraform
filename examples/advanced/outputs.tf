@@ -58,7 +58,7 @@ output "summary" {
 # Connection Information
 # =============================================================================
 
-output "z_connection_info" {  # Using z_ to ensure this is the last output
+output "z_connection_info" { # Using z_ to ensure this is the last output
   description = "Connection information for the Pexip deployment"
   value       = <<-EOT
     ================================================================================

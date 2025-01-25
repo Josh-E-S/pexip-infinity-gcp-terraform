@@ -1,4 +1,18 @@
 # =============================================================================
+# Network Module
+# =============================================================================
+
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 4.0.0"
+    }
+  }
+}
+
+# =============================================================================
 # Network Data Sources
 # =============================================================================
 locals {
@@ -12,10 +26,10 @@ data "google_compute_network" "networks" {
 }
 
 data "google_compute_subnetwork" "subnets" {
-  for_each  = { for idx, r in var.regions : r.region => r }
-  project   = var.project_id
-  name      = each.value.subnet_name
-  region    = each.key
+  for_each = { for idx, r in var.regions : r.region => r }
+  project  = var.project_id
+  name     = each.value.subnet_name
+  region   = each.key
 }
 
 # =============================================================================

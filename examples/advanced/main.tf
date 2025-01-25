@@ -3,11 +3,15 @@
 # =============================================================================
 # This example demonstrates a full-featured deployment across multiple regions
 
+terraform {
+  required_version = ">= 1.0.0"
+}
+
 # =============================================================================
 # Main Configuration
 # =============================================================================
 module "pexip" {
-  source = "../../"  # This will be terraform-google-modules/pexip-infinity/google in production
+  source = "../../" # This will be terraform-google-modules/pexip-infinity/google in production
 
   # =============================================================================
   # Project Configuration

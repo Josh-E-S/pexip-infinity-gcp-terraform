@@ -2,11 +2,6 @@
 # Node Module Variables
 # =============================================================================
 
-variable "project_id" {
-  description = "The GCP project ID"
-  type        = string
-}
-
 variable "type" {
   description = "Type of node to create (management, transcoding, proxy)"
   type        = string

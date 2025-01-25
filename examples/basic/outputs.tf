@@ -12,8 +12,8 @@ output "transcoding_nodes" {
   value       = module.pexip.transcoding_nodes
 }
 
-output "z_connection_info" {  # Using z_ to ensure this is the last output
-  description = "Connection information and next steps" 
+output "z_connection_info" { # Using z_ to ensure this is the last output
+  description = "Connection information and next steps"
   value       = <<-EOT
     ================================================================================
     Pexip Infinity Deployment Information

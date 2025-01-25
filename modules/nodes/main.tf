@@ -1,4 +1,18 @@
 # =============================================================================
+# Nodes Module
+# =============================================================================
+
+terraform {
+  required_version = ">= 1.0.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 4.0.0"
+    }
+  }
+}
+
+# =============================================================================
 # Node IP Addresses
 # =============================================================================
 
@@ -38,7 +52,7 @@ resource "google_compute_instance" "node" {
     initialize_params {
       image = var.image_name
       size  = local.boot_disk_size
-      type  = "pd-ssd"  # Always use SSD for Pexip nodes
+      type  = "pd-ssd" # Always use SSD for Pexip nodes
     }
   }
 
@@ -73,4 +87,3 @@ resource "google_compute_instance" "node" {
     create_before_destroy = true
   }
 }
-

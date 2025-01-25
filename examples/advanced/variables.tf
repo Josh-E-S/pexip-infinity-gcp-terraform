@@ -14,9 +14,9 @@ variable "project_id" {
 variable "regions" {
   description = "(Required) List of regions and their network configurations. Each region must have an existing VPC network and subnet."
   type = list(object({
-    region      = string     # Region name
-    network     = string     # Name of existing VPC network
-    subnet_name = string     # Name of existing subnet in the VPC
+    region      = string # Region name
+    network     = string # Name of existing VPC network
+    subnet_name = string # Name of existing subnet in the VPC
   }))
   validation {
     condition     = length(var.regions) > 0
@@ -50,32 +50,32 @@ variable "services" {
   description = "(Optional) Service configuration toggles. Enable only the services you need to minimize attack surface."
   type = object({
     # Management services
-    enable_ssh               = optional(bool)  # (Optional) SSH access to nodes, default: true
-    enable_conf_provisioning = optional(bool)  # (Optional) Conferencing node provisioning, default: true
+    enable_ssh               = optional(bool) # (Optional) SSH access to nodes, default: true
+    enable_conf_provisioning = optional(bool) # (Optional) Conferencing node provisioning, default: true
 
     # Call services (inbound)
-    enable_sip   = optional(bool)  # (Optional) SIP/SIP-TLS calling, default: true
-    enable_h323  = optional(bool)  # (Optional) H.323 calling, default: true
-    enable_teams = optional(bool)  # (Optional) Microsoft Teams integration, default: true
-    enable_gmeet = optional(bool)  # (Optional) Google Meet integration, default: true
+    enable_sip   = optional(bool) # (Optional) SIP/SIP-TLS calling, default: true
+    enable_h323  = optional(bool) # (Optional) H.323 calling, default: true
+    enable_teams = optional(bool) # (Optional) Microsoft Teams integration, default: true
+    enable_gmeet = optional(bool) # (Optional) Google Meet integration, default: true
 
     # Optional services
-    enable_teams_hub = optional(bool)  # (Optional) Teams Connector Azure Event Hub, default: false
-    enable_syslog    = optional(bool)  # (Optional) External syslog, default: false
-    enable_smtp      = optional(bool)  # (Optional) Email notifications, default: false
-    enable_ldap      = optional(bool)  # (Optional) LDAP authentication, default: false
+    enable_teams_hub = optional(bool) # (Optional) Teams Connector Azure Event Hub, default: false
+    enable_syslog    = optional(bool) # (Optional) External syslog, default: false
+    enable_smtp      = optional(bool) # (Optional) Email notifications, default: false
+    enable_ldap      = optional(bool) # (Optional) LDAP authentication, default: false
   })
   default = {
     enable_ssh               = true
     enable_conf_provisioning = true
-    enable_sip              = true
-    enable_h323             = true
-    enable_teams            = true
-    enable_gmeet            = true
-    enable_teams_hub        = false
-    enable_syslog           = false
-    enable_smtp             = false
-    enable_ldap             = false
+    enable_sip               = true
+    enable_h323              = true
+    enable_teams             = true
+    enable_gmeet             = true
+    enable_teams_hub         = false
+    enable_syslog            = false
+    enable_smtp              = false
+    enable_ldap              = false
   }
 }
 
@@ -129,9 +129,9 @@ variable "transcoding_nodes" {
   description = "(Optional) Transcoding nodes configuration per region. These handle media processing. If not specified, no transcoding nodes will be created."
   type = object({
     regional_config = map(object({
-      count        = number          # Number of nodes in this region
-      name         = string          # Name prefix for the nodes
-      public_ip    = optional(bool)  # (Optional) Whether to assign public IPs, defaults to true
+      count        = number           # Number of nodes in this region
+      name         = string           # Name prefix for the nodes
+      public_ip    = optional(bool)   # (Optional) Whether to assign public IPs, defaults to true
       machine_type = optional(string) # (Optional) Defaults to n2-highcpu-8
       disk_size    = optional(number) # (Optional) Boot disk size in GB, defaults to 50
     }))
@@ -140,9 +140,9 @@ variable "transcoding_nodes" {
     regional_config = {}
   }
   validation {
-    condition     = alltrue([for k, v in var.transcoding_nodes.regional_config : 
-                    can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", v.name)) && 
-                    v.count > 0])
+    condition = alltrue([for k, v in var.transcoding_nodes.regional_config :
+      can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", v.name)) &&
+    v.count > 0])
     error_message = "For each region: name must be valid and count must be greater than 0"
   }
 }
@@ -151,9 +151,9 @@ variable "proxy_nodes" {
   description = "(Optional) Proxy nodes configuration per region. These handle call signaling and client connections. If not specified, no proxy nodes will be created."
   type = object({
     regional_config = map(object({
-      count        = number          # Number of nodes in this region
-      name         = string          # Name prefix for the nodes
-      public_ip    = optional(bool)  # (Optional) Whether to assign public IPs, defaults to true
+      count        = number           # Number of nodes in this region
+      name         = string           # Name prefix for the nodes
+      public_ip    = optional(bool)   # (Optional) Whether to assign public IPs, defaults to true
       machine_type = optional(string) # (Optional) Defaults to n2-highcpu-4
       disk_size    = optional(number) # (Optional) Boot disk size in GB, defaults to 50
     }))
@@ -162,9 +162,9 @@ variable "proxy_nodes" {
     regional_config = {}
   }
   validation {
-    condition     = alltrue([for k, v in var.proxy_nodes.regional_config : 
-                    can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", v.name)) && 
-                    v.count > 0])
+    condition = alltrue([for k, v in var.proxy_nodes.regional_config :
+      can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", v.name)) &&
+    v.count > 0])
     error_message = "For each region: name must be valid and count must be greater than 0"
   }
 }

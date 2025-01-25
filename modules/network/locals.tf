@@ -12,7 +12,7 @@ locals {
   }
 
   # Default ranges for media/signaling traffic
-  default_ranges = ["0.0.0.0/0"]  # Used for SIP, H.323, Teams, and GMeet traffic
+  default_ranges = ["0.0.0.0/0"] # Used for SIP, H.323, Teams, and GMeet traffic
 
   # Port configurations by service type
   ports = {
@@ -20,15 +20,15 @@ locals {
     management = {
       admin = {
         description = "Management node administrative access"
-        tcp = ["443"]
+        tcp         = ["443"]
       }
       ssh = {
         description = "Management node and conferencing nodes SSH access"
-        tcp = ["22"]
+        tcp         = ["22"]
       }
       conf_provisioning = {
         description = "Conferencing node provisioning"
-        tcp = ["8443"]
+        tcp         = ["8443"]
       }
     }
 
@@ -36,48 +36,48 @@ locals {
     conferencing = {
       sip = {
         description = "SIP signaling"
-        tcp = ["5060", "5061"]  # SIP and SIP/TLS
-        udp = ["40000-49999"]   # SIP UDP media
+        tcp         = ["5060", "5061"] # SIP and SIP/TLS
+        udp         = ["40000-49999"]  # SIP UDP media
       }
       h323 = {
         description = "H.323 signaling"
-        tcp = ["1720", "33000-39999"]  # H.323/H.245
-        udp = ["1719"]                 # H.323 RAS
+        tcp         = ["1720", "33000-39999"] # H.323/H.245
+        udp         = ["1719"]                # H.323 RAS
       }
       teams = {
         description = "Microsoft Teams integration"
-        tcp = ["443"]           # Teams signaling
-        udp = ["50000-54999"]  # Teams media
+        tcp         = ["443"]         # Teams signaling
+        udp         = ["50000-54999"] # Teams media
       }
       gmeet = {
         description = "Google Meet integration"
-        tcp = ["443"]           # Meet signaling
-        udp = ["19302-19309"]  # SRTP/SRTCP
+        tcp         = ["443"]         # Meet signaling
+        udp         = ["19302-19309"] # SRTP/SRTCP
       }
     }
 
     # Internal communication between nodes
     internal = {
       description = "Internal communication between nodes"
-      udp = ["500"]        # ISAKMP (IPsec)
-      protocols = ["esp"]  # ESP (IP Protocol 50)
+      udp         = ["500"] # ISAKMP (IPsec)
+      protocols   = ["esp"] # ESP (IP Protocol 50)
     }
 
-# =============================================================================
-# NOT USED, BUT LEFT IN FOR REFERENCE AND OPTIONAL USE
-# =============================================================================
+    # =============================================================================
+    # NOT USED, BUT LEFT IN FOR REFERENCE AND OPTIONAL USE
+    # =============================================================================
 
     # GCP allows all traffic outbound by default.
     # Core services (outbound only, always enabled.) Not used, but left in for reference or optional use.
     core = {
       dns = {
         description = "DNS queries"
-        tcp = ["53"]
-        udp = ["53"]
+        tcp         = ["53"]
+        udp         = ["53"]
       }
       ntp = {
         description = "NTP time sync"
-        udp = ["123"]
+        udp         = ["123"]
       }
     }
 
@@ -85,19 +85,19 @@ locals {
     optional = {
       teams_hub = {
         description = "Teams Connector Azure Event Hub (AMQPS)"
-        tcp = ["5671"]
+        tcp         = ["5671"]
       }
       syslog = {
         description = "Syslog messages"
-        udp = ["514"]
+        udp         = ["514"]
       }
       smtp = {
         description = "SMTP mail"
-        tcp = ["587"]
+        tcp         = ["587"]
       }
       ldap = {
         description = "LDAP directory services"
-        tcp = ["389", "636"]  # LDAP and LDAPS
+        tcp         = ["389", "636"] # LDAP and LDAPS
       }
     }
   }
