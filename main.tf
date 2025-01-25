@@ -62,14 +62,11 @@ module "ssh" {
 module "management_node" {
   source = "./modules/nodes"
 
-  project_id = var.project_id
-  type       = "management"
-  name       = var.management_node.name
-  region     = var.management_node.region
-  network_id = [for r in module.network.networks : r.id
-  if r.name == local.mgmt_network][0]
-  subnet_id = [for s in module.network.subnets : s.id
-  if s.region == var.management_node.region][0]
+  type           = "management"
+  name           = var.management_node.name
+  region         = var.management_node.region
+  network_id     = [for r in module.network.networks : r.id if r.name == local.mgmt_network][0]
+  subnet_id      = [for s in module.network.subnets : s.id if s.region == var.management_node.region][0]
   public_ip      = var.management_node.public_ip
   image_name     = module.images.images.management.name
   apis           = module.apis
@@ -78,8 +75,7 @@ module "management_node" {
 
 # Get management region's network
 locals {
-  mgmt_network = [for r in var.regions : r.network
-  if r.region == var.management_node.region][0]
+  mgmt_network = [for r in var.regions : r.network if r.region == var.management_node.region][0]
 }
 
 # =============================================================================
@@ -90,7 +86,6 @@ module "transcoding_nodes" {
 
   source = "./modules/nodes"
 
-  project_id     = var.project_id
   type           = "transcoding"
   name           = each.value.name
   region         = each.key
@@ -111,7 +106,6 @@ module "proxy_nodes" {
 
   source = "./modules/nodes"
 
-  project_id     = var.project_id
   type           = "proxy"
   name           = each.value.name
   region         = each.key
