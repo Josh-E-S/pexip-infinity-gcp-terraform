@@ -1,12 +1,9 @@
-# =============================================================================
-# Basic Pexip Infinity Deployment Example
-# =============================================================================
+Basic Pexip Infinity Deployment Example
+=====================================
 
 This example demonstrates the minimum required configuration for deploying Pexip Infinity on Google Cloud Platform (GCP). It creates a single management node and one transcoding node in a single region.
 
-# =============================================================================
-# Architecture Overview
-# =============================================================================
+### Architecture Overview
 
 This deployment creates:
 - 1 Management Node (N2 High CPU 4 machine type)
@@ -14,9 +11,7 @@ This deployment creates:
 - Required firewall rules for management and media traffic
 - Uses existing Pexip images (no image upload required)
 
-# =============================================================================
-# Prerequisites
-# =============================================================================
+### Prerequisites
 
 1. A GCP project with billing enabled
 2. Required APIs (automatically enabled by the module):
@@ -32,9 +27,7 @@ This deployment creates:
    - VPC network
    - Subnet in your chosen region
 
-# =============================================================================
-# Required Configuration
-# =============================================================================
+### Required Configuration
 
 The following variables must be configured in your `terraform.tfvars`:
 
@@ -71,9 +64,7 @@ The following variables must be configured in your `terraform.tfvars`:
    }
    ```
 
-# =============================================================================
-# Default Configurations
-# =============================================================================
+### Default Configurations
 
 The module provides sensible defaults for:
 
@@ -86,9 +77,7 @@ The module provides sensible defaults for:
    - Management Node: N2 High CPU 4
    - Transcoding Node: N2 High CPU 4
 
-# =============================================================================
-# Usage
-# =============================================================================
+### Usage
 
 1. Copy and configure:
    ```bash
@@ -109,9 +98,7 @@ The module provides sensible defaults for:
    - Complete initial setup wizard
    - Configure transcoding nodes
 
-# =============================================================================
-# Clean Up
-# =============================================================================
+### Clean Up
 
 To remove all resources:
 ```bash
