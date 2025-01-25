@@ -1,16 +1,38 @@
 # =============================================================================
 # Required Parameters
 # =============================================================================
+# The project ID is required for all GCP resource creation
+# This should be a valid GCP project with the necessary APIs enabled
 
-# GCP project ID where Pexip Infinity will be deployed
 project_id = "your-project-id"
 
-# Network Configuration - Must have an existing VPC network and subnet
+# =============================================================================
+# Network Configuration
+# =============================================================================
+# Define your region for deployment
+# Region requirements:
+#  - A pre-existing VPC network
+#  - A pre-existing subnet within that network
+#  - Proper firewall rules (created automatically by this module)
+
 regions = [{
   region      = "us-central1"     # Primary region for deployment
   network     = "pexip-infinity"  # Name of existing VPC network
   subnet_name = "pexip-subnet"    # Name of existing subnet in the VPC
 }]
+
+# =============================================================================
+# Management Access Configuration
+# =============================================================================
+# Define CIDR ranges that can access management interfaces
+# This includes:
+#  - SSH access (port 22)
+#  - Admin UI (port 443)
+#  - Conferencing Node Provisioning (port 8443)
+
+management_access = {
+  cidr_ranges = ["0.0.0.0/0"]  # Replace with your allowed IP ranges
+}
 
 # =============================================================================
 # Image Configuration
@@ -19,10 +41,10 @@ regions = [{
 pexip_images = {
   upload_files = false  # Set to false when using existing GCP images
   management = {
-    image_name = "pexip-infinity-management-v30"  # Name of existing management node image in GCP
+    image_name = "pexip-infinity-management-v36"  # Name of existing management node image in GCP
   }
   conferencing = {
-    image_name = "pexip-infinity-conferencing-v30"  # Name of existing conferencing node image in GCP
+    image_name = "pexip-infinity-conferencing-v36"  # Name of existing conferencing node image in GCP
   }
 }
 
@@ -31,34 +53,34 @@ pexip_images = {
 # pexip_images = {
 #   upload_files = true   # Set to true to upload new images
 #   management = {
-#     source_file = "/path/to/Pexip_Infinity_Management_Node_v30.tar.gz"
-#     image_name  = "pexip-infinity-management-v30"
+#     source_file = "/path/to/Pexip_Infinity_Management_Node_v36.tar.gz"
+#     image_name  = "pexip-infinity-management-v36"
 #   }
 #   conferencing = {
-#     source_file = "/path/to/Pexip_Infinity_Conferencing_Node_v30.tar.gz"
-#     image_name  = "pexip-infinity-conferencing-v30"
+#     source_file = "/path/to/Pexip_Infinity_Conferencing_Node_v36.tar.gz"
+#     image_name  = "pexip-infinity-conferencing-v36"
 #   }
 # }
 
-# Management Access Configuration - Restrict these CIDR ranges in production!
-management_access = {
-  cidr_ranges = ["0.0.0.0/0"]  # Replace with your allowed IP ranges
-}
-
+# =============================================================================
+# Node Configurations
+# =============================================================================
 # Management Node Configuration
+# This node handles all system configuration
 management_node = {
-  name      = "mgmt-1"        # Name prefix for the instance
+  name      = "mgmt-1"
   region    = "us-central1"   # Must match one of the regions above
-  public_ip = true           # Whether to assign a public IP
+  public_ip = true           # Set false for internal-only access
 }
 
-# Transcoding Node Configuration (Optional)
+# Transcoding Node Configuration
 transcoding_nodes = {
   regional_config = {
     "us-central1" = {
-      count     = 1           # Number of nodes to deploy
-      name      = "transcode" # Name prefix for instances
-      public_ip = true       # Whether to assign public IPs
+      count     = 1
+      name      = "transcode"
+      public_ip = true       # Required for external participants
+      machine_type = "n2-highcpu-8"
     }
   }
 }

@@ -1,25 +1,24 @@
 # This project is for community use. This is not an official Pexip repo.
 
-# Terraform Google Pexip Infinity
+# Pexip Infinity Terraform Module for Google Cloud Platform (GCP)
 
-A Terraform module for deploying Pexip Infinity conferencing platform on Google Cloud. This module handles the infrastructure setup including networks, compute instances, images, and firewall rules, letting you focus on configuring your Pexip environment.
+A Terraform module for deploying Pexip Infinity conferencing platform on Google Cloud. This module handles the infrastructure setup including networks, compute instances, images, and firewall rules.
 
 ## Overview
 
 This module creates the core infrastructure needed to run Pexip Infinity on Google Cloud:
 - Management, transcoding, and optional proxy nodes across multiple regions
-- Network configuration with support for both new and existing VPCs
+- Network configuration supporting existing VPCs and subnets
 - Firewall rules for Pexip services (SIP, H.323, Teams, Meet)
 - Automated image management from local files or existing images
 - SSH key generation and secure storage in Secret Manager
 
 ### Features
 
-- Multi-region support with automatic CIDR block calculation
-- Unified node management for management, transcoding, and proxy nodes
-- Static IP support for all nodes (internal and external)
-- Flexible network configuration (use existing or create new)
-- Comprehensive image management with support for both local files and existing images
+- Multi-region support
+- Easy and fast deployment for management, transcoding, and proxy nodes
+- Static internal and external IP support for all nodes
+- Image management with support for both local files and existing images
 - Secure SSH key management through Secret Manager
 
 ## Repository Structure
@@ -46,13 +45,70 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
 ### Required for Deployment
 1. Terraform >= 1.0.0
 2. GCP Project with:
-   - Required APIs enabled (this module will attempt to enable them)
-   - Service Account with necessary permissions
-3. For existing network deployment:
-   - VPC Network and subnets already created in your target regions
-4. Pexip Infinity images from https://www.pexip.com/help-center/platform-download
-   - Option 1: Images already uploaded to your GCP project
-   - Option 2: Local .tgz files that the module will upload
+   - Required APIs enabled (this module will enable them automatically)
+   - Service Account with necessary permissions:
+     - Compute Admin
+     - Secret Manager Admin
+     - Service Account User
+     - Storage Admin
+3. Network Infrastructure:
+   - Existing VPC Networks and subnets in your target regions
+4. Pexip Infinity images:
+   - Option 1: Images already in your GCP project (specify source_image)
+   - Option 2: Local .tar.gz files to upload (specify source_file)
+
+### Required Variables Configuration
+
+1. Project and Network:
+   ```hcl
+   # GCP project ID where Pexip Infinity will be deployed
+   project_id = "your-project-id"
+
+   # Network Configuration - Must have an existing VPC network and subnet
+   regions = [{
+     region      = "us-central1"     # Primary region for deployment
+     network     = "pexip-infinity"  # Name of existing VPC network
+     subnet_name = "pexip-subnet"    # Name of existing subnet in the VPC
+   }]
+   ```
+
+2. Image Configuration:
+   ```hcl
+   # Option 1: Using existing images from your GCP project
+   pexip_images = {
+     upload_files = false  # Set to false when using existing GCP images
+     management = {
+       image_name = "pexip-infinity-management-v36"  # Name of existing management node image in GCP
+     }
+     conferencing = {
+       image_name = "pexip-infinity-conferencing-v36"  # Name of existing conferencing node image in GCP
+     }
+   }
+   ```
+
+3. Node Configuration:
+   ```hcl
+   # Management Node Configuration
+   management_node = {
+     name      = "mgmt-1"        # Name prefix for the instance
+     region    = "us-central1"   # Must match one of the regions above
+     public_ip = true            # Whether to assign a public IP
+   }
+
+   # Transcoding Node Configuration
+   transcoding_nodes = {
+     regional_config = {
+       "us-central1" = {
+         count     = 1                  # Number of nodes to deploy
+         name      = "transcode"        # Name prefix for instances
+         public_ip = true               # Whether to assign public IPs
+         machine_type = "n2-highcpu-4"  # Machine type based on capacity
+       }
+     }
+   }
+   ```
+
+For detailed configuration options, see the [examples](./examples) directory.
 
 ## Quick Start
 
@@ -88,17 +144,16 @@ terraform apply
 ### Required Variables
 
 - `project_id`: Your GCP project ID
-- `network_config`: Network configuration (existing or new)
-- `deployment_regions`: Region and subnet configuration
-- `pexip_images`: Configuration for Pexip Infinity images
+- `regions`: List of regions with their network configurations
+- `pexip_images`: Configuration for Pexip Infinity images (existing or new)
 - `management_node`: Management node configuration
-- `transcoding_nodes`: Transcoding node configurations
+- `transcoding_nodes`: Transcoding node configuration
 
 ### Optional Variables
 
 - `proxy_nodes`: Proxy node configurations
-- `management_access`: Management access CIDR ranges and features
-- `pexip_services`: Service enablement for SIP, H.323, Teams, and Meet
+- `management_access`: Management access CIDR ranges and features (default: `0.0.0.0/0`)
+- `services`: Service enablement configuration
 
 See the `examples/` directory for detailed configuration examples:
 
@@ -110,16 +165,17 @@ See the `examples/` directory for detailed configuration examples:
 2. **Advanced Example** (`examples/advanced/`)
    - Multi-region deployment
    - Multiple transcoding and proxy nodes
-   - Custom machine types and disk sizes
+   - Custom machine types
    - All optional services enabled
 
 ## Post-Deployment
 
 After successful deployment, the module will output:
-1. SSH key retrieval instructions (if auto-generated)
+1. SSH key retrieval instructions
 2. Management node connection details (SSH and web interface)
 3. Transcoding and proxy node details per region
 4. Network and subnet information
+5. Image and disk information
 
 Use these details to:
 1. Run the initial installer on the management node
