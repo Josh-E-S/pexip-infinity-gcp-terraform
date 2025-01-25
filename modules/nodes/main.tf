@@ -56,7 +56,7 @@ resource "google_compute_instance" "node" {
     }
   }
 
-  # SSH key configuration using provided key
+  # SSH key configuration using generated key
   metadata = {
     ssh-keys               = "admin:${var.ssh_public_key}"
     block-project-ssh-keys = "true"
@@ -74,8 +74,3 @@ resource "google_compute_instance" "node" {
   }
 }
 
-# =============================================================================
-# Static IP Addresses (if needed for future use)
-# =============================================================================
-
-# Could add static IP resources here if needed in the future

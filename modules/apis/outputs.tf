@@ -3,6 +3,6 @@
 # =============================================================================
 
 output "enabled_apis" {
-  description = "List of enabled GCP APIs"
+  description = "Enabled GCP APIs"
   value       = google_project_service.apis
 }

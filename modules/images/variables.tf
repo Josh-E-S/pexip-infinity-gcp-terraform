@@ -2,7 +2,6 @@
 # Images Module Variables
 # =============================================================================
 
-# Required Variables
 variable "project_id" {
   description = "The GCP project ID"
   type        = string

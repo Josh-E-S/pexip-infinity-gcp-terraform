@@ -1,3 +1,7 @@
+# =============================================================================
+# Node Locals
+# =============================================================================
+
 locals {
   # Default configurations per node type
   node_defaults = {
@@ -13,7 +17,7 @@ locals {
       network_tags   = ["pexip-transcoding"]
     }
     proxy = {
-      machine_type   = "n2-standard-2"
+      machine_type   = "n2-standard-"
       boot_disk_size = 50
       network_tags   = ["pexip-proxy"]
     }

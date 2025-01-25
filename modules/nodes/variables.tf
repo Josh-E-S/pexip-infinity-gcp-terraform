@@ -2,7 +2,6 @@
 # Node Module Variables
 # =============================================================================
 
-# Required Variables
 variable "project_id" {
   description = "The GCP project ID"
   type        = string
@@ -42,7 +41,6 @@ variable "image_name" {
   type        = string
 }
 
-# Optional Variables
 variable "quantity" {
   description = "Number of nodes to create (only valid for conferencing nodes)"
   type        = number

@@ -1,5 +1,5 @@
 # =============================================================================
-# Network Module Local Variables
+# Network Locals
 # =============================================================================
 
 locals {
@@ -19,19 +19,16 @@ locals {
     # Management access (inbound only, uses management_access.cidr_ranges)
     management = {
       admin = {
-        description = "Management Node Admin UI"
-        protocol    = "tcp"
-        ports       = ["443"]
+        description = "Management node administrative access"
+        tcp = ["443"]
       }
       ssh = {
-        description = "Management Node SSH"
-        protocol    = "tcp"
-        ports       = ["22"]
+        description = "Management node and conferencing nodes SSH access"
+        tcp = ["22"]
       }
       conf_provisioning = {
-        description = "Conferencing Node Provisioning"
-        protocol    = "tcp"
-        ports       = ["8443"]
+        description = "Conferencing node provisioning"
+        tcp = ["8443"]
       }
     }
 
@@ -59,7 +56,19 @@ locals {
       }
     }
 
-    # Core services (outbound only, always enabled)
+    # Internal communication between nodes
+    internal = {
+      description = "Internal communication between nodes"
+      udp = ["500"]        # ISAKMP (IPsec)
+      protocols = ["esp"]  # ESP (IP Protocol 50)
+    }
+
+# =============================================================================
+# NOT USED, BUT LEFT IN FOR REFERENCE AND OPTIONAL USE
+# =============================================================================
+
+    # GCP allows all traffic outbound by default.
+    # Core services (outbound only, always enabled.) Not used, but left in for reference or optional use.
     core = {
       dns = {
         description = "DNS queries"
@@ -72,7 +81,7 @@ locals {
       }
     }
 
-    # Optional services (outbound only)
+    # Optional services (outbound only, always enabled) Not used, but left in for reference or optional use.
     optional = {
       teams_hub = {
         description = "Teams Connector Azure Event Hub (AMQPS)"
@@ -90,13 +99,6 @@ locals {
         description = "LDAP directory services"
         tcp = ["389", "636"]  # LDAP and LDAPS
       }
-    }
-
-    # Internal communication between nodes
-    internal = {
-      description = "Internal communication between nodes"
-      udp = ["500"]        # ISAKMP (IPsec)
-      protocols = ["esp"]  # ESP (IP Protocol 50)
     }
   }
 }

@@ -5,7 +5,7 @@
 # single-region deployment with one management node and one transcoding node.
 
 module "pexip" {
-  source = "../../"  # This will be terraform-google-modules/pexip-infinity/google in production
+  source = "../../"  # This will be terraform-gcp-modules/pexip-infinity/google in production
 
   # =============================================================================
   # Required Configuration

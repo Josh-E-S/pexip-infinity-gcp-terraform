@@ -1,14 +1,15 @@
 # =============================================================================
-# APIs Module - Enable Required GCP APIs
+# APIs Module Locals
 # =============================================================================
 
 locals {
   required_apis = [
-    "cloudresourcemanager.googleapis.com",  # Required for IAM
-    "compute.googleapis.com",               # Required for GCE
-    "iam.googleapis.com",                   # Required for IAM
-    "secretmanager.googleapis.com",         # Required for SSH key storage
-    "storage.googleapis.com"                # Required for GCS
+    "compute.googleapis.com",              # Compute Engine API
+    "secretmanager.googleapis.com",        # Secret Manager API
+    "storage.googleapis.com",              # Cloud Storage API
+    "iam.googleapis.com",                  # Identity and Access Management API
+    "cloudresourcemanager.googleapis.com", # Cloud Resource Manager API
+    "servicenetworking.googleapis.com"     # Service Networking API
   ]
 }
 
@@ -16,10 +17,12 @@ locals {
 resource "google_project_service" "apis" {
   for_each = toset(local.required_apis)
 
-  service            = each.value
-  project           = var.project_id
-  disable_on_destroy = false
+  project = var.project_id
+  service = each.value
 
   # Prevent issues with dependent services after destroy
+  disable_on_destroy = false
+
+  # Do not disable dependent services automatically to avoid other issues
   disable_dependent_services = false
 }

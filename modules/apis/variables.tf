@@ -3,6 +3,6 @@
 # =============================================================================
 
 variable "project_id" {
-  description = "GCP project ID"
+  description = "The GCP project ID to deploy to"
   type        = string
 }

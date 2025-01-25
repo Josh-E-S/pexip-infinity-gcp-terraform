@@ -14,7 +14,7 @@ variable "project_id" {
 variable "regions" {
   description = "(Required) List of regions and their network configurations. Each region must have an existing VPC network and subnet."
   type = list(object({
-    region      = string     # Region name (e.g., us-central1)
+    region      = string     # Region name
     network     = string     # Name of existing VPC network
     subnet_name = string     # Name of existing subnet in the VPC
   }))

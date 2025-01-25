@@ -49,7 +49,7 @@ output "proxy_nodes" {
 # =============================================================================
 # Connection Information
 # =============================================================================
-output "z_connection_info" {
+output "z_connection_info" {  # Using z_ to ensure this is the last output
   description = "Connection information for Pexip nodes"
   value       = <<-EOT
     Management Node:
