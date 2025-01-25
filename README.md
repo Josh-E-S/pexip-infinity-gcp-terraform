@@ -1,12 +1,17 @@
 # This project is for community use. This is not an official Pexip repo.
 
-# Pexip Infinity on GCP using Terraform
+# Terraform Google Pexip Infinity
 
-Terraform module for deploying Pexip Infinity video conferencing platform on GCP. This module will deploy the Pexip infrastructure, but still requires configuration after deployment.
+A Terraform module for deploying Pexip Infinity conferencing platform on Google Cloud. This module handles the infrastructure setup including networks, compute instances, images, and firewall rules, letting you focus on configuring your Pexip environment.
 
 ## Overview
 
-This repository provides Terraform templates for deploying and managing Pexip Infinity video conferencing infrastructure on GCP. The templates are designed to provide a flexible, easy-to-use experience with sensible defaults and comprehensive configuration options.
+This module creates the core infrastructure needed to run Pexip Infinity on Google Cloud:
+- Management, transcoding, and optional proxy nodes across multiple regions
+- Network configuration with support for both new and existing VPCs
+- Firewall rules for Pexip services (SIP, H.323, Teams, Meet)
+- Automated image management from local files or existing images
+- SSH key generation and secure storage in Secret Manager
 
 ### Features
 
@@ -25,12 +30,15 @@ This repository provides Terraform templates for deploying and managing Pexip In
 ├── variables.tf      # Input variable definitions
 ├── outputs.tf        # Output definitions
 ├── versions.tf       # Provider and version constraints
-├── modules/         # Modular components
-│   ├── apis/        # GCP API enablement
-│   ├── images/      # Pexip image management
-│   ├── network/     # Networking and firewall rules
-│   └── nodes/       # Node configuration (management, transcoding, proxy)
-└── terraform.tfvars.example  # Example configuration file
+├── examples/         # Example configurations
+│   ├── basic/       # Basic single-region deployment
+│   └── advanced/    # Full-featured multi-region deployment
+└── modules/         # Modular components
+    ├── apis/        # GCP API enablement
+    ├── images/      # Pexip image management
+    ├── network/     # Networking and firewall rules
+    ├── nodes/       # Node configuration (management, transcoding, proxy)
+    └── ssh/         # SSH key generation and management
 ```
 
 ## Prerequisites
@@ -54,79 +62,19 @@ git clone https://github.com/Josh-E-S/terraform-gcp-pexip-infinity.git
 cd terraform-gcp-pexip-infinity
 ```
 
-2. Copy and modify the example variables file:
+2. Choose an example configuration:
 ```bash
-cp terraform.tfvars.example terraform.tfvars
+# For a basic setup
+cd examples/basic
+# For a full-featured setup
+cd examples/advanced
 ```
 
-3. Configure your deployment in terraform.tfvars:
-   - Set your GCP project ID and network configuration
-   - Configure regions and optional CIDR blocks:
-     ```hcl
-     deployment_regions = {
-       "us-central1" = {
-         subnet_name = "subnet-central"  # Required for existing networks
-         cidr_block  = "10.0.1.0/24"    # Optional for new networks
-       }
-       "us-east1" = {
-         subnet_name = "subnet-east"
-         cidr_block  = "10.0.2.0/24"
-       }
-     }
-     ```
-   - Set image configuration:
-     ```hcl
-     pexip_images = {
-       upload_files = true
-       management = {
-         source_file = "/path/to/files/Pexip_Infinity_v36_GCP_pxMgr.tar.gz"
-         image_name  = "pexip-infinity-mgmt-36"
-       }
-       transcoding = {
-         source_file = "/path/to/files/Pexip_Infinity_v36_GCP_pxConf.tar.gz"
-         image_name  = "pexip-infinity-transcoding-36"
-       }
-       proxy = {
-         source_file = "/path/to/files/Pexip_Infinity_v36_GCP_pxConf.tar.gz"
-         image_name  = "pexip-infinity-proxy-36"
-       }
-     }
-     ```
-   - Configure nodes:
-     ```hcl
-     # Management node
-     management_node = {
-       region       = "us-central1"
-       machine_type = "n2-highcpu-4"
-       public_ip    = true
-     }
-
-     # Transcoding nodes
-     transcoding_nodes = {
-       regional_config = {
-         "us-central1" = {
-           node_count   = 2
-           machine_type = "n2-highcpu-8"
-         }
-         "us-east1" = {
-           node_count   = 2
-           machine_type = "n2-highcpu-4"
-         }
-       }
-       public_ip = true
-     }
-
-     # Optional proxy nodes
-     proxy_nodes = {
-       regional_config = {
-         "us-central1" = {
-           node_count   = 1
-           machine_type = "n2-highcpu-4"
-         }
-       }
-       public_ip = true
-     }
-     ```
+3. Copy and modify the variables file:
+```bash
+cp terraform.tfvars.sample terraform.tfvars
+# Edit terraform.tfvars with your values
+```
 
 4. Initialize and apply:
 ```bash
@@ -152,7 +100,18 @@ terraform apply
 - `management_access`: Management access CIDR ranges and features
 - `pexip_services`: Service enablement for SIP, H.323, Teams, and Meet
 
-See `terraform.tfvars.example` for detailed descriptions and examples.
+See the `examples/` directory for detailed configuration examples:
+
+1. **Basic Example** (`examples/basic/`)
+   - Single region deployment
+   - One management node and one transcoding node
+   - Minimum required configuration
+
+2. **Advanced Example** (`examples/advanced/`)
+   - Multi-region deployment
+   - Multiple transcoding and proxy nodes
+   - Custom machine types and disk sizes
+   - All optional services enabled
 
 ## Post-Deployment
 
