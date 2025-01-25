@@ -19,7 +19,7 @@ variable "regions" {
 
 # Management Access Configuration
 variable "management_access" {
-  description = "CIDR ranges for management access (admin UI, SSH, provisioning)"
+  description = "CIDR ranges for all management-related access (admin UI, SSH, provisioning). These ranges will be applied to all management firewall rules. Defaults to 0.0.0.0/0 but should be restricted in production."
   type = object({
     cidr_ranges = list(string)
   })
@@ -30,7 +30,7 @@ variable "management_access" {
 
 # Service Configuration
 variable "services" {
-  description = "Service configuration toggles"
+  description = "Service configuration toggles. All call services (SIP, H.323, Teams, GMeet) are open to 0.0.0.0/0 by default as they handle media and signaling traffic."
   type = object({
     # Management services
     enable_ssh               = bool
@@ -66,5 +66,3 @@ variable "services" {
     enable_ldap      = false
   }
 }
-
-

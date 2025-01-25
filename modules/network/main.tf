@@ -1,10 +1,8 @@
-# =============================================================================
-# Network Data Sources
-# =============================================================================
-locals {
-  networks = distinct([for r in var.regions : r.network])
-}
+# ============================================================================
+# Network Module - Firewall Rules
+# ============================================================================
 
+# Get existing networks and subnets
 data "google_compute_network" "networks" {
   for_each = toset([for r in var.regions : r.network])
   project  = var.project_id
@@ -18,171 +16,190 @@ data "google_compute_subnetwork" "subnets" {
   region    = each.key
 }
 
-# =============================================================================
-# Management Node Inbound Rules
-# =============================================================================
+# ============================================================================
+# Management Node Firewall Rules
+# ============================================================================
 
-# Admin UI Access - create for each network
+# Admin UI Access (HTTPS)
 resource "google_compute_firewall" "mgmt_admin" {
   for_each      = toset(local.networks)
   name          = "${local.firewall_prefix}-mgmt-admin-${substr(md5(each.value), 0, 4)}"
-  network       = each.value
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
   description   = local.ports.management.admin.description
-  direction     = "INGRESS"
   source_ranges = var.management_access.cidr_ranges
-  target_tags   = [local.tags.management]
+  target_tags   = ["pexip-management"]
 
   allow {
-    protocol = "tcp"
-    ports    = local.ports.management.admin.tcp
+    protocol = local.ports.management.admin.protocol
+    ports    = local.ports.management.admin.ports
   }
 }
 
-# SSH Access - create for each network
+# SSH Access
 resource "google_compute_firewall" "mgmt_ssh" {
   for_each      = var.services.enable_ssh ? toset(local.networks) : []
   name          = "${local.firewall_prefix}-mgmt-ssh-${substr(md5(each.value), 0, 4)}"
-  network       = each.value
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
   description   = local.ports.management.ssh.description
-  direction     = "INGRESS"
   source_ranges = var.management_access.cidr_ranges
-  target_tags   = [local.tags.management, local.tags.transcoding, local.tags.proxy]
+  target_tags   = ["pexip-management", "pexip-conferencing"]
 
   allow {
-    protocol = "tcp"
-    ports    = local.ports.management.ssh.tcp
+    protocol = local.ports.management.ssh.protocol
+    ports    = local.ports.management.ssh.ports
   }
 }
 
-# Conferencing Node Provisioning Access - create for each network
-resource "google_compute_firewall" "mgmt_conf_provisioning" {
+# Conferencing Node Provisioning
+resource "google_compute_firewall" "mgmt_provisioning" {
   for_each      = var.services.enable_conf_provisioning ? toset(local.networks) : []
-  name          = "${local.firewall_prefix}-mgmt-conf-provisioning-${substr(md5(each.value), 0, 4)}"
-  network       = each.value
-  description   = local.ports.management.conf_provisioning.description
-  direction     = "INGRESS"
+  name          = "${local.firewall_prefix}-mgmt-prov-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.management.provisioning.description
   source_ranges = var.management_access.cidr_ranges
-  target_tags   = [local.tags.transcoding, local.tags.proxy]
+  target_tags   = ["pexip-conferencing"]
 
   allow {
-    protocol = "tcp"
-    ports    = local.ports.management.conf_provisioning.tcp
+    protocol = local.ports.management.provisioning.protocol
+    ports    = local.ports.management.provisioning.ports
   }
 }
 
-# =============================================================================
-# Call Services (Inbound Rules)
-# =============================================================================
+# ============================================================================
+# Call Services Firewall Rules
+# ============================================================================
 
-# SIP - create for each network
+# SIP/SIP-TLS
 resource "google_compute_firewall" "sip" {
   for_each      = var.services.enable_sip ? toset(local.networks) : []
   name          = "${local.firewall_prefix}-sip-${substr(md5(each.value), 0, 4)}"
-  network       = each.value
-  description   = local.ports.conferencing.sip.description
-  direction     = "INGRESS"
-  source_ranges = local.default_ranges
-  target_tags   = [local.tags.transcoding, local.tags.proxy]
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.services.sip.description
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["pexip-conferencing"]
 
   allow {
-    protocol = "tcp"
-    ports    = local.ports.conferencing.sip.tcp
-  }
-
-  allow {
-    protocol = "udp"
-    ports    = local.ports.conferencing.sip.udp
+    protocol = local.ports.services.sip.protocol
+    ports    = local.ports.services.sip.ports
   }
 }
 
-# H.323 - create for each network
+# H.323
 resource "google_compute_firewall" "h323" {
   for_each      = var.services.enable_h323 ? toset(local.networks) : []
   name          = "${local.firewall_prefix}-h323-${substr(md5(each.value), 0, 4)}"
-  network       = each.value
-  description   = local.ports.conferencing.h323.description
-  direction     = "INGRESS"
-  source_ranges = local.default_ranges
-  target_tags   = [local.tags.transcoding, local.tags.proxy]
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.services.h323.description
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["pexip-conferencing"]
 
   allow {
-    protocol = "tcp"
-    ports    = local.ports.conferencing.h323.tcp
-  }
-
-  allow {
-    protocol = "udp"
-    ports    = local.ports.conferencing.h323.udp
+    protocol = local.ports.services.h323.protocol
+    ports    = local.ports.services.h323.ports
   }
 }
 
-# Teams - create for each network
+# Microsoft Teams
 resource "google_compute_firewall" "teams" {
   for_each      = var.services.enable_teams ? toset(local.networks) : []
   name          = "${local.firewall_prefix}-teams-${substr(md5(each.value), 0, 4)}"
-  network       = each.value
-  description   = local.ports.conferencing.teams.description
-  direction     = "INGRESS"
-  source_ranges = local.default_ranges
-  target_tags   = [local.tags.transcoding]
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.services.teams.description
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["pexip-conferencing"]
 
   allow {
-    protocol = "tcp"
-    ports    = local.ports.conferencing.teams.tcp
-  }
-
-  allow {
-    protocol = "udp"
-    ports    = local.ports.conferencing.teams.udp
+    protocol = local.ports.services.teams.protocol
+    ports    = local.ports.services.teams.ports
   }
 }
 
-# Google Meet - create for each network
+# Google Meet
 resource "google_compute_firewall" "gmeet" {
   for_each      = var.services.enable_gmeet ? toset(local.networks) : []
   name          = "${local.firewall_prefix}-gmeet-${substr(md5(each.value), 0, 4)}"
-  network       = each.value
-  description   = local.ports.conferencing.gmeet.description
-  direction     = "INGRESS"
-  source_ranges = local.default_ranges
-  target_tags   = [local.tags.transcoding]
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.services.gmeet.description
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["pexip-conferencing"]
 
   allow {
-    protocol = "tcp"
-    ports    = local.ports.conferencing.gmeet.tcp
-  }
-
-  allow {
-    protocol = "udp"
-    ports    = local.ports.conferencing.gmeet.udp
+    protocol = local.ports.services.gmeet.protocol
+    ports    = local.ports.services.gmeet.ports
   }
 }
 
-# =============================================================================
-# Internal Node Communication
-# =============================================================================
+# ============================================================================
+# Optional Services Firewall Rules
+# ============================================================================
 
-# Allow IPsec communication between nodes (IKE and ESP)
-resource "google_compute_firewall" "internal_node" {
-  for_each = data.google_compute_network.networks
+# Teams Hub
+resource "google_compute_firewall" "teams_hub" {
+  for_each      = var.services.enable_teams_hub ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-teams-hub-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.services.teams_hub.description
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["pexip-conferencing"]
 
-  name    = format("%s-internal-%s", local.firewall_prefix, substr(sha256(each.key), 0, 4))
-  network = each.value.name
-  project = var.project_id
-
-  description = local.ports.internal.description
-
-  source_tags = [local.tags.management, local.tags.transcoding, local.tags.proxy]
-  target_tags = [local.tags.management, local.tags.transcoding, local.tags.proxy]
-
-  # Allow ISAKMP (IKE) for IPsec key exchange
   allow {
-    protocol = "udp"
-    ports    = local.ports.internal.udp
+    protocol = local.ports.services.teams_hub.protocol
+    ports    = local.ports.services.teams_hub.ports
   }
+}
 
-  # Allow ESP (protocol 50) for IPsec data
+# Syslog
+resource "google_compute_firewall" "syslog" {
+  for_each      = var.services.enable_syslog ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-syslog-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.services.syslog.description
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["pexip-management", "pexip-conferencing"]
+
   allow {
-    protocol = "esp"
+    protocol = local.ports.services.syslog.protocol
+    ports    = local.ports.services.syslog.ports
+  }
+}
+
+# SMTP
+resource "google_compute_firewall" "smtp" {
+  for_each      = var.services.enable_smtp ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-smtp-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.services.smtp.description
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["pexip-management"]
+
+  allow {
+    protocol = local.ports.services.smtp.protocol
+    ports    = local.ports.services.smtp.ports
+  }
+}
+
+# LDAP/LDAPS
+resource "google_compute_firewall" "ldap" {
+  for_each      = var.services.enable_ldap ? toset(local.networks) : []
+  name          = "${local.firewall_prefix}-ldap-${substr(md5(each.value), 0, 4)}"
+  network       = data.google_compute_network.networks[each.value].name
+  project       = var.project_id
+  description   = local.ports.services.ldap.description
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["pexip-management"]
+
+  allow {
+    protocol = local.ports.services.ldap.protocol
+    ports    = local.ports.services.ldap.ports
   }
 }

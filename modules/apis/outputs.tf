@@ -1,4 +1,8 @@
+# =============================================================================
+# APIs Module Outputs
+# =============================================================================
+
 output "enabled_apis" {
-  description = "Enabled GCP APIs"
+  description = "List of enabled GCP APIs"
   value       = google_project_service.apis
 }

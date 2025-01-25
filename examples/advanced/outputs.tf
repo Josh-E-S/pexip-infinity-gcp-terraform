@@ -35,7 +35,7 @@ output "z_connection_info" {  # Using z_ to ensure this is the last output
     %{for region, instances in module.pexip.proxy_nodes~}
     ${region}:
     %{for name, instance in instances~}
-    ${name}: https://${instance.public_ip}:8443 #Initial bootstrap
+    ${name}: https://${instance.public_ip}:8443 #Initial bootstrap when enabled
     %{endfor~}
     %{endfor~}
 

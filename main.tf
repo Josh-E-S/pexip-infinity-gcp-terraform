@@ -49,6 +49,14 @@ module "network" {
 }
 
 # =============================================================================
+# SSH Key
+# =============================================================================
+module "ssh" {
+  source     = "./modules/ssh"
+  project_id = var.project_id
+}
+
+# =============================================================================
 # Management Node
 # =============================================================================
 module "management_node" {
@@ -65,6 +73,7 @@ module "management_node" {
   public_ip  = var.management_node.public_ip
   image_name = module.images.images.management.name
   apis       = module.apis
+  ssh_public_key = module.ssh.public_key
 }
 
 # Get management region's network
@@ -91,6 +100,7 @@ module "transcoding_nodes" {
   image_name    = module.images.images.conferencing.name
   machine_type  = each.value.machine_type
   apis          = module.apis
+  ssh_public_key = module.ssh.public_key
 }
 
 # =============================================================================
@@ -111,6 +121,7 @@ module "proxy_nodes" {
   image_name    = module.images.images.conferencing.name
   machine_type  = each.value.machine_type
   apis          = module.apis
+  ssh_public_key = module.ssh.public_key
 }
 
 # Map of regions to their networks

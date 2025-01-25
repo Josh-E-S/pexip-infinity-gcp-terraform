@@ -81,3 +81,8 @@ variable "apis" {
   description = "Enabled APIs from the apis module"
   type        = any
 }
+
+variable "ssh_public_key" {
+  description = "SSH public key to add to instance metadata"
+  type        = string
+}

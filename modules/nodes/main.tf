@@ -1,36 +1,4 @@
 # =============================================================================
-# Node SSH Key
-# =============================================================================
-
-# Generate SSH key pair
-resource "tls_private_key" "ssh" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-# Store private key in Secret Manager
-resource "google_secret_manager_secret" "ssh_private_key" {
-  depends_on = [var.apis]
-  secret_id  = "${var.project_id}-pexip-${var.type}-ssh-key"
-
-  replication {
-    auto {}
-  }
-
-  labels = {
-    terraform = "true"
-    module    = "pexip"
-    type      = var.type
-  }
-}
-
-# Store the private key value
-resource "google_secret_manager_secret_version" "ssh_private_key" {
-  secret      = google_secret_manager_secret.ssh_private_key.id
-  secret_data = tls_private_key.ssh.private_key_pem
-}
-
-# =============================================================================
 # Node IP Addresses
 # =============================================================================
 
@@ -88,9 +56,9 @@ resource "google_compute_instance" "node" {
     }
   }
 
-  # SSH key configuration using generated key
+  # SSH key configuration using provided key
   metadata = {
-    ssh-keys               = "admin:${tls_private_key.ssh.public_key_openssh}"
+    ssh-keys               = "admin:${var.ssh_public_key}"
     block-project-ssh-keys = "true"
   }
 

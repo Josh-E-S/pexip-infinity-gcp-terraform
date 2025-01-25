@@ -1,3 +1,7 @@
+# =============================================================================
+# Network Module Local Variables
+# =============================================================================
+
 locals {
   # Common prefixes and tags
   firewall_prefix = "pexip-infinity"
@@ -7,33 +11,36 @@ locals {
     proxy       = "pexip-proxy"
   }
 
-  # Default ranges
-  default_ranges = ["0.0.0.0/0"]
+  # Default ranges for media/signaling traffic
+  default_ranges = ["0.0.0.0/0"]  # Used for SIP, H.323, Teams, and GMeet traffic
 
   # Port configurations by service type
   ports = {
-    # Management access (inbound only, requires CIDR config)
+    # Management access (inbound only, uses management_access.cidr_ranges)
     management = {
       admin = {
-        description = "Management node administrative access"
-        tcp = ["443"]
+        description = "Management Node Admin UI"
+        protocol    = "tcp"
+        ports       = ["443"]
       }
       ssh = {
-        description = "Management node and conferencing nodes SSH access"
-        tcp = ["22"]
+        description = "Management Node SSH"
+        protocol    = "tcp"
+        ports       = ["22"]
       }
       conf_provisioning = {
-        description = "Conferencing node provisioning"
-        tcp = ["8443"]
+        description = "Conferencing Node Provisioning"
+        protocol    = "tcp"
+        ports       = ["8443"]
       }
     }
 
-    # Call services (inbound/outbound, always 0.0.0.0/0)
+    # Call services (inbound/outbound, uses default_ranges for media/signaling)
     conferencing = {
       sip = {
         description = "SIP signaling"
         tcp = ["5060", "5061"]  # SIP and SIP/TLS
-        udp = ["5060"]          # SIP UDP
+        udp = ["40000-49999"]   # SIP UDP media
       }
       h323 = {
         description = "H.323 signaling"

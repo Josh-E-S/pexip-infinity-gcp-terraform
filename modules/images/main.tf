@@ -34,19 +34,45 @@ resource "google_storage_bucket_object" "conferencing_image" {
 # Create management node image
 resource "google_compute_image" "management" {
   count = var.images.upload_files ? 1 : 0
-  name  = "pexip-infinity-management"
+  name  = var.images.management.image_name
+
   raw_disk {
-    source = "gs://${local.bucket_name}/${basename(var.images.management.source_file)}"
+    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images[0].name}/${google_storage_bucket_object.management_image[0].name}"
   }
+
+  labels = {
+    managed-by = "terraform"
+    node-type  = "management"
+    product    = "pexip-infinity"
+  }
+
+  timeouts {
+    create = "30m"
+    delete = "30m"
+  }
+
   depends_on = [google_storage_bucket_object.management_image]
 }
 
 # Create conferencing node image (used by both transcoding and proxy nodes)
 resource "google_compute_image" "conferencing" {
   count = var.images.upload_files ? 1 : 0
-  name  = "pexip-infinity-conferencing"
+  name  = var.images.conferencing.image_name
+
   raw_disk {
-    source = "gs://${local.bucket_name}/${basename(var.images.conferencing.source_file)}"
+    source = "https://storage.googleapis.com/${google_storage_bucket.pexip_images[0].name}/${google_storage_bucket_object.conferencing_image[0].name}"
   }
+
+  labels = {
+    managed-by = "terraform"
+    node-type  = "conferencing"
+    product    = "pexip-infinity"
+  }
+
+  timeouts {
+    create = "30m"
+    delete = "30m"
+  }
+
   depends_on = [google_storage_bucket_object.conferencing_image]
 }
