@@ -6,18 +6,18 @@ locals {
   # Default configurations per node type
   node_defaults = {
     management = {
-      machine_type   = "n2-standard-2"
+      machine_type   = "n2-highcpu-4"
       boot_disk_size = 100
       instance_count = 1 # Always 1 for management
       network_tags   = ["pexip-mgmt"]
     }
     transcoding = {
-      machine_type   = "n2-standard-2"
+      machine_type   = "n2-highcpu-8"
       boot_disk_size = 50
       network_tags   = ["pexip-transcoding"]
     }
     proxy = {
-      machine_type   = "n2-standard-"
+      machine_type   = "n2-highcpu-4"
       boot_disk_size = 50
       network_tags   = ["pexip-proxy"]
     }
