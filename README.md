@@ -102,6 +102,7 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
        image_name = "pexip-infinity-conferencing-v36"  # Name of existing conferencing node image in GCP
      }
    }
+   ```
 
 3. Image Configuration Option 2:
    ```hcl
@@ -119,6 +120,7 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
      }
    }
    ```
+
 4. Management Access Configuration:
    ```hcl
    # Define CIDR ranges that can access management interfaces
@@ -161,7 +163,8 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
      }
    }
    ```
-7. Proxy Node Configuration (optional)
+
+1. Proxy Node Configuration (optional)
    ```hcl
    # Add addtional proxy blocks as needed for additional regions and sizes
 
@@ -177,7 +180,7 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
    }
    ```
 
-6. Services Configuration (optional):
+2. Services Configuration (optional):
    ```hcl
    # Create firewall rules for each service as needed. See Pexip's documentation for detailed port information:
    # (https://docs.pexip.com/admin/port_usage.htm)
