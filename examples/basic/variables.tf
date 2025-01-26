@@ -14,6 +14,10 @@ variable "regions" {
     network     = string # Name of existing VPC network
     subnet_name = string # Name of existing subnet in the VPC
   }))
+  validation {
+    condition     = length(var.regions) > 0
+    error_message = "At least one region must be specified"
+  }
 }
 
 variable "pexip_images" {
@@ -29,6 +33,14 @@ variable "pexip_images" {
       image_name  = string           # Required if upload_files = false
     })
   })
+  validation {
+    condition     = var.pexip_images.upload_files ? (var.pexip_images.management.source_file != null && var.pexip_images.conferencing.source_file != null) : true
+    error_message = "When upload_files is true, both management.source_file and conferencing.source_file must be provided"
+  }
+  validation {
+    condition     = !var.pexip_images.upload_files ? (var.pexip_images.management.image_name != "" && var.pexip_images.conferencing.image_name != "") : true
+    error_message = "When upload_files is false, both management.image_name and conferencing.image_name must be provided"
+  }
 }
 
 variable "management_access" {
@@ -36,27 +48,47 @@ variable "management_access" {
   type = object({
     cidr_ranges = list(string)
   })
+  validation {
+    condition     = length(var.management_access.cidr_ranges) > 0
+    error_message = "At least one CIDR range must be specified for management access"
+  }
 }
 
 variable "management_node" {
   description = "(Required) Management node configuration"
   type = object({
-    name      = string
-    region    = string
-    public_ip = bool
+    name         = string           # Name for the management node
+    region       = string           # Must match one of the deployment regions
+    public_ip    = bool             # Whether to assign a public IP
+    machine_type = optional(string) # (Optional) Defaults to n2-highcpu-4
   })
+  validation {
+    condition     = can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", var.management_node.name))
+    error_message = "Name must start with a letter, contain only lowercase letters, numbers, and hyphens, and end with a letter or number"
+  }
 }
 
 variable "transcoding_nodes" {
   description = "(Required) Transcoding nodes configuration"
   type = object({
     regional_config = map(object({
-      count     = number
-      name      = string
-      public_ip = bool
+      count        = number           # Number of nodes in this region
+      name         = string           # Name prefix for the nodes
+      public_ip    = bool             # Whether to assign public IPs
+      machine_type = optional(string) # (Optional) Defaults to n2-highcpu-8
     }))
   })
+  validation {
+    condition = alltrue([for k, v in var.transcoding_nodes.regional_config :
+      can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", v.name)) &&
+    v.count > 0])
+    error_message = "For each region: name must be valid and count must be greater than 0"
+  }
 }
+
+# =============================================================================
+# Optional Variables
+# =============================================================================
 
 variable "services" {
   description = "(Optional) Service configuration toggles for firewall rules"

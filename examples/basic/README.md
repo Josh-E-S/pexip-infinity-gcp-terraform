@@ -88,9 +88,10 @@ This example creates the essential infrastructure needed to run Pexip Infinity o
    ```hcl
    # Management Node Configuration
    management_node = {
-     name      = "mgmt-1"        # Name for the management node
-     region    = "us-central1"   # Must match one of the regions above
-     public_ip = true            # Set false for internal-only access
+     name      = "mgmt-1"             # Name for the management node
+     region    = "us-central1"        # Must match one of the regions above
+     public_ip = true                 # Set false for internal-only access
+     machine_type = "n2-highcpu-4"    # Pexip recommended
    }
 
    # Transcoding Node Configuration

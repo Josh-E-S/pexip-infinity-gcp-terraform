@@ -20,55 +20,6 @@ variable "regions" {
   }
 }
 
-variable "management_access" {
-  description = "(Required) CIDR ranges for management access (admin UI, SSH, provisioning)"
-  type = object({
-    cidr_ranges = list(string)
-  })
-  validation {
-    condition     = length(var.management_access.cidr_ranges) > 0
-    error_message = "At least one CIDR range must be specified for management access"
-  }
-}
-
-variable "services" {
-  description = "(Optional) Service configuration toggles for firewall rules"
-  type = object({
-    # Management services
-    enable_ssh               = bool
-    enable_conf_provisioning = bool
-
-    # Call services
-    enable_sip   = bool
-    enable_h323  = bool
-    enable_teams = bool
-    enable_gmeet = bool
-
-    # Optional services
-    enable_teams_hub = bool
-    enable_syslog    = bool
-    enable_smtp      = bool
-    enable_ldap      = bool
-  })
-  default = {
-    # Management services default to enabled
-    enable_ssh               = true
-    enable_conf_provisioning = true
-
-    # Call services default to enabled
-    enable_sip   = true
-    enable_h323  = true
-    enable_teams = true
-    enable_gmeet = true
-
-    # Optional services default to disabled
-    enable_teams_hub = false
-    enable_syslog    = false
-    enable_smtp      = false
-    enable_ldap      = false
-  }
-}
-
 variable "pexip_images" {
   description = "(Required) Configuration for Pexip Infinity images"
   type = object({
@@ -89,6 +40,17 @@ variable "pexip_images" {
   validation {
     condition     = !var.pexip_images.upload_files ? (var.pexip_images.management.image_name != "" && var.pexip_images.conferencing.image_name != "") : true
     error_message = "When upload_files is false, both management.image_name and conferencing.image_name must be provided"
+  }
+}
+
+variable "management_access" {
+  description = "(Required) CIDR ranges for management access (admin UI, SSH, provisioning)"
+  type = object({
+    cidr_ranges = list(string)
+  })
+  validation {
+    condition     = length(var.management_access.cidr_ranges) > 0
+    error_message = "At least one CIDR range must be specified for management access"
   }
 }
 
@@ -145,5 +107,43 @@ variable "proxy_nodes" {
       can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", v.name)) &&
     v.count > 0])
     error_message = "For each region: name must be valid and count must be greater than 0"
+  }
+}
+
+variable "services" {
+  description = "(Optional) Service configuration toggles for firewall rules"
+  type = object({
+    # Management services
+    enable_ssh               = bool
+    enable_conf_provisioning = bool
+
+    # Call services
+    enable_sip   = bool
+    enable_h323  = bool
+    enable_teams = bool
+    enable_gmeet = bool
+
+    # Optional services
+    enable_teams_hub = bool
+    enable_syslog    = bool
+    enable_smtp      = bool
+    enable_ldap      = bool
+  })
+  default = {
+    # Management services default to enabled
+    enable_ssh               = true
+    enable_conf_provisioning = true
+
+    # Call services default to enabled
+    enable_sip   = true
+    enable_h323  = true
+    enable_teams = true
+    enable_gmeet = true
+
+    # Optional services default to disabled
+    enable_teams_hub = false
+    enable_syslog    = false
+    enable_smtp      = false
+    enable_ldap      = false
   }
 }

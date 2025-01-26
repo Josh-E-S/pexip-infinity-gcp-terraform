@@ -59,6 +59,7 @@ management_node = {
   name      = "mgmt"          # Will become mgmt-us-central1
   region    = "us-central1"   # Must match one of the regions above
   public_ip = true            # Set false for internal-only access
+  machine_type = "n2-highcpu-4"    # Pexip recommended
 }
 
 # Transcoding Node Configuration
