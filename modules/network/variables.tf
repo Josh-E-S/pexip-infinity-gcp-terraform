@@ -32,11 +32,11 @@ variable "management_access" {
 variable "services" {
   description = "Service configuration toggles. All call services (SIP, H.323, Teams, GMeet) are open to 0.0.0.0/0 by default as they handle media and signaling traffic."
   type = object({
-    # Management services
+    # Management services (inbound)
     enable_ssh               = bool
     enable_conf_provisioning = bool
 
-    # Call services (inbound)
+    # Call services
     enable_sip   = bool
     enable_h323  = bool
     enable_teams = bool
