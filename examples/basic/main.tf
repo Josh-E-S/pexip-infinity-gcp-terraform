@@ -10,7 +10,7 @@ terraform {
 
 module "pexip" {
   source  = "Josh-E-S/pexip-infinity/google//examples/basic"
-  version = "0.1.0"
+  version = "0.1.2"
 
   # =============================================================================
   # Required Configuration
