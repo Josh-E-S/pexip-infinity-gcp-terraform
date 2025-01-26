@@ -3,36 +3,44 @@ Basic Pexip Infinity Deployment Example
 
 This example demonstrates the minimum required configuration for deploying Pexip Infinity on Google Cloud Platform (GCP). It creates a single management node and one transcoding node in a single region.
 
-### Architecture Overview
+## Overview
 
-This deployment creates:
-- 1 Management Node
-- 1 Transcoding Node
-- Required firewall rules for management and media traffic
-- Uses existing Pexip images (no image upload required)
+This example creates the essential infrastructure needed to run Pexip Infinity on Google Cloud:
+- Single management node and transcoding node
+- Basic network configuration using an existing VPC and subnet
+- Required firewall rules for Pexip services
+- Image configuration using existing GCP images
 
-### Prerequisites
+### Features
 
-1. A GCP project with billing enabled
-2. Required APIs (automatically enabled by the module):
-   - Compute Engine API
-   - Cloud Resource Manager API
-   - IAM API
-   - Secret Manager API
+- Single-region deployment
+- Basic deployment with minimum required configuration
+- Static IP support for all nodes
+- Essential firewall rules for core services
 
-3. Existing Network Infrastructure:
-   - VPC network
-   - Subnet in your target region
+## Prerequisites
 
+### Required for Deployment
+1. Terraform >= 1.0.0
+2. GCP Project with:
+   - Required APIs enabled (automatically enabled by the module)
+   - Service Account with necessary permissions:
+     - Compute Admin
+     - Secret Manager Admin
+     - Service Account User
+     - Storage Admin
+3. Network Infrastructure:
+   - Existing VPC Network and subnet in your target region
 4. Pexip Infinity images:
-   - Option 1: Images already in your GCP project (specify source_image)
-   - Option 2: Local .tar.gz files to upload (specify source_file)
+   - Pexip Infinity images already in your GCP project (specify source_image)
+   - Pexip Infinity GCP .tar.gz files can be found here on Pexip's website:
+     - https://www.pexip.com/help-center/platform-download
+   - Documentation on how to convert:
+     - https://docs.pexip.com/admin/gcp_disk_images.htm
 
-### Required Configuration
+### Required Variables Configuration
 
-Copy `terraform.tfvars.example` to `terraform.tfvars` and configure:
-
-1. **Project and Network**
+1. Project and Network:
    ```hcl
    # GCP project ID where Pexip Infinity will be deployed
    project_id = "your-project-id"
@@ -45,7 +53,7 @@ Copy `terraform.tfvars.example` to `terraform.tfvars` and configure:
    }]
    ```
 
-2. **Image Configuration**
+2. Image Configuration:
    ```hcl
    # Using existing images from your GCP project
    pexip_images = {
@@ -59,11 +67,28 @@ Copy `terraform.tfvars.example` to `terraform.tfvars` and configure:
    }
    ```
 
-3. **Node Configuration**
+3. Management Access Configuration:
+   ```hcl
+   # Define CIDR ranges that can access management interfaces
+   # This includes:
+   #  - SSH access (port 22)
+   #  - Admin UI (port 443)
+   #  - Conferencing Node Provisioning (port 8443)
+
+   management_access = {
+     cidr_ranges = [
+       "10.0.0.0/8",        # Internal corporate network example
+       "192.168.0.0/16",    # VPN network example
+       "203.0.113.0/24"     # Office network example
+     ]
+   }
+   ```
+
+4. Node Configuration:
    ```hcl
    # Management Node Configuration
    management_node = {
-     name      = "mgmt-1"        # Name prefix for the instance
+     name      = "mgmt-1"        # Name for the management node
      region    = "us-central1"   # Must match one of the regions above
      public_ip = true            # Set false for internal-only access
    }
@@ -71,43 +96,59 @@ Copy `terraform.tfvars.example` to `terraform.tfvars` and configure:
    # Transcoding Node Configuration
    transcoding_nodes = {
      regional_config = {
-       "us-central1" = {
+       "us-central1" = {                  # Region definition- must match one of the regions above
          count        = 1                 # Number of nodes to deploy
          name         = "transcode"       # Name prefix for instances
-         public_ip    = true             # Set false for internal-only access
-         machine_type = "n2-highcpu-4"   # Machine type based on capacity
+         public_ip    = true              # Set false for internal-only access
+         machine_type = "n2-highcpu-4"    # Machine type based on capacity
        }
      }
    }
    ```
 
-### Default Values
+### Optional Variables Configuration
 
-The module providesdefaults for:
-
-1. **Management Access**
+1. Services Configuration (Optional):
    ```hcl
-   management_access = {
-     cidr_ranges = ["0.0.0.0/0"]  # Restrict this in production!
+   # Service configuration toggles for firewall rules
+   services = {
+     # Management services default to enabled
+     enable_ssh               = true    # SSH access (port 22)
+     enable_conf_provisioning = true    # Conferencing Node Provisioning (port 8443)
+
+     # Call services default to enabled
+     enable_sip   = true    # SIP signaling and media
+     enable_h323  = true    # H.323 signaling and media
+     enable_teams = true    # Microsoft Teams media
+     enable_gmeet = true    # Google Meet media
+
+     # Optional services default to disabled
+     enable_teams_hub = false    # Microsoft Teams hub
+     enable_syslog    = false    # Syslog
+     enable_smtp      = false    # SMTP
+     enable_ldap      = false    # LDAP
    }
    ```
 
-2. **Machine Types** (if not specified)
-   - Management Node: n2-highcpu-4
-   - Transcoding Node: n2-highcpu-4
+## Quick Start
 
-### Usage
+To use this example:
 
-1. Initialize and deploy:
+1. Initialize your Terraform workspace:
    ```bash
    terraform init
-   terraform plan
+   ```
+
+2. Copy `terraform.tfvars.example` to `terraform.tfvars` and customize the configuration.
+
+3. Apply the configuration:
+   ```bash
    terraform apply
    ```
 
 ## Post-Deployment
 
-After successful deployment, the module will output:
+After successful deployment, you will receive:
 1. SSH key retrieval instructions
 2. Management node connection details (SSH and web interface)
 3. Transcoding node details
@@ -118,7 +159,8 @@ Use these details to:
 1. Run the initial installer on the management node
 2. Access the management interface to complete Pexip configuration
 3. Provision transcoding node
-   - Configure your Pexip Infinity deployment following the [Pexip documentation](https://docs.pexip.com/admin/admin_intro.htm)
+
+For detailed Pexip configuration steps, refer to the [Pexip documentation](https://docs.pexip.com/admin/admin_intro.htm).
 
 ### Clean Up
 
@@ -127,4 +169,4 @@ To remove all resources:
 terraform destroy
 ```
 
-**Note:** This will delete all resources.
+**Note:** This will delete all deployed resources.

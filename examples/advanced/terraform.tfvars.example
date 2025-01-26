@@ -1,20 +1,14 @@
 # =============================================================================
-# Required Parameters
+# Required Variables Configuration
 # =============================================================================
-# The project ID is required for all GCP resource creation
-# This should be a valid GCP project with the necessary APIs enabled
 
+# GCP project ID where Pexip Infinity will be deployed
 project_id = "your-project-id"
 
 # =============================================================================
 # Network Configuration
 # =============================================================================
-# Define your multi-region deployment architecture
-# Each region requires:
-#  - A pre-existing VPC network
-#  - A pre-existing subnet within that network
-#  - Proper firewall rules (created automatically by this module)
-
+# Network Configuration - Must have existing VPC networks and subnets
 regions = [
   {
     region      = "us-central1"    # Primary region
@@ -49,118 +43,104 @@ regions = [
 
 management_access = {
   cidr_ranges = [
-    "10.0.0.0/8",        # Internal corporate network
-    "192.168.0.0/16",    # VPN network
-    "203.0.113.0/24"     # Office network
+    "10.0.0.0/8",        # Internal corporate network example
+    "192.168.0.0/16",    # VPN network example
+    "203.0.113.0/24"     # Office network example
   ]
 }
 
 # =============================================================================
-# Pexip Image Configuration
+# Image Configuration
 # =============================================================================
-# There are two options for configuring Pexip Infinity images:
-
-# Option 1: Using existing images from your GCP project
-# Use this if you have already uploaded and created the images in GCP
+# Upload and convert Pexip images from local files
 pexip_images = {
-  upload_files = false  # Set to false when using existing GCP images
+  upload_files = true   # Set to true to upload new images
   management = {
-    image_name  = "pexip-infinity-management-v36"  # Name of existing management node image in GCP
+    source_file = "/path/to/Pexip_Infinity_Management_Node_v36.tar.gz"  # Full path to local management node image
+    image_name  = "pexip-infinity-management-v36"  # Name to give the image in GCP
   }
   conferencing = {
-    image_name  = "pexip-infinity-conferencing-v36"  # Name of existing conferencing node image in GCP
+    source_file = "/path/to/Pexip_Infinity_Conferencing_Node_v36.tar.gz"  # Full path to local conferencing node image
+    image_name  = "pexip-infinity-conferencing-v36"  # Name to give the image in GCP
   }
 }
 
-# Option 2: Uploading new images from local files
-# Uncomment and modify this block if you want to upload new images from local .tar.gz files
-# pexip_images = {
-#   upload_files = true   # Set to true to upload new images
-#   management = {
-#     source_file = "/path/to/Pexip_Infinity_Management_Node_v36.tar.gz"  # Full path to local management node image
-#     image_name  = "pexip-infinity-management-v36"  # Name to give the image in GCP
-#   }
-#   conferencing = {
-#     source_file = "/path/to/Pexip_Infinity_Conferencing_Node_v36.tar.gz"  # Full path to local conferencing node image
-#     image_name  = "pexip-infinity-conferencing-v36"  # Name to give the image in GCP
-#   }
-# }
-
 # =============================================================================
-# Service Configuration
+# Node Configuration
 # =============================================================================
-# Enable or disable specific Pexip services
-# Security Note: Only enable services that you need
-# Default ports will be opened in firewall rules automatically
-
-services = {
-  # Management Services
-  enable_ssh               = true  # SSH access to nodes (port 22)
-  enable_conf_provisioning = true  # Conferencing node provisioning (port 8443)
-
-  # Call Services (Inbound)
-  enable_sip              = true  # SIP/SIP-TLS calling (ports 5060/5061)
-  enable_h323            = true  # H.323 calling (ports 1720/1719)
-  enable_teams           = true  # Microsoft Teams integration
-  enable_gmeet           = true  # Google Meet integration
-
-  # Optional Services
-  enable_teams_hub        = true  # Teams Connector Azure Event Hub
-  enable_syslog           = true  # External syslog (port 514)
-  enable_smtp             = true  # Email notifications (port 587)
-  enable_ldap             = true  # LDAP authentication (port 389)
-}
-
-# =============================================================================
-# Node Configurations
-# =============================================================================
-# Configure the specifications for each node type
-# Consider these factors when choosing machine types:
-#  - Number of concurrent calls
-#  - Types of conferences (Teams/Meet/SIP/H.323)
-#  - Geographic distribution
+# Node names will be automatically formatted as: {name}-{region} for single nodes
+# or {name}-{region}-{index} for multiple nodes (e.g., transcode-us-east1-1)
 
 # Management Node Configuration
-# This node handles all system configuration
 management_node = {
-  name         = "mgmt-node"
+  name         = "mgmt"            # Will become mgmt-us-central1
   region       = "us-central1"
-  public_ip    = true              # Set false for internal-only access
-  machine_type = "n2-highcpu-8"    # Sized for larger deployments
-  disk_size    = 150               # Larger disk for logs and recordings
+  public_ip    = true
+  machine_type = "n2-highcpu-8"    # Enhanced for larger deployments
+  disk_size    = 150               # Larger disk for logs
 }
 
-# Transcoding Nodes Configuration
-# These nodes handle media processing and conferencing
+# Transcoding Node Configuration
 transcoding_nodes = {
   regional_config = {
-    "us-central1" = {
-      count        = 1             # Number of nodes in this region
-      name         = "transcode-central-1"
-      public_ip    = true         # Required for external participants
-      machine_type = "n2-highcpu-8"
-      disk_size    = 50
-    }
     "us-east1" = {
-      count        = 1
-      name         = "transcode-east-1"
-      public_ip    = true
+      count        = 2                 # Will create: transcode-us-east1-1, transcode-us-east1-2
+      name         = "transcode"       # Base name for instances
+      public_ip    = true              # Required for external participants
+      machine_type = "n2-highcpu-8"    # Enhanced for production workloads
+      disk_size    = 50                # Additional storage for logs
+    },
+    "europe-west1" = {
+      count        = 2                 # Will create: transcode-europe-west1-1, transcode-europe-west1-2
+      name         = "transcode"       # Base name for instances
+      public_ip    = false             # Internal-only access, proxy nodes required below
       machine_type = "n2-highcpu-8"
       disk_size    = 50
+    },
+    "asia-southeast1" = {
+      count        = 2                 # Will create: transcode-asia-southeast1-1, transcode-asia-southeast1-2
+      name         = "transcode"       # Base name for instances
+      public_ip    = true              # Required for external participants
+      machine_type = "n2-highcpu-8"    # Enhanced for production workloads
+      disk_size    = 50                # Additional storage for logs
     }
   }
 }
 
-# Proxy Nodes Configuration (Optional)
-# These nodes handle call signaling and media forwarding
+# Proxy Node Configuration
 proxy_nodes = {
   regional_config = {
-    "us-central1" = {
-      count        = 1
-      name         = "proxy-central"
-      public_ip    = true        # Required for external participants
-      machine_type = "n2-highcpu-4"
-      disk_size    = 50
+    "europe-west1" = {
+      count        = 2                # Will create: proxy-europe-west1-1, proxy-europe-west1-2
+      name         = "proxy"          # Base name for instances
+      public_ip    = true             # Required for external participants
+      machine_type = "n2-highcpu-4"   # Standard proxy specification
+      disk_size    = 50               # Additional storage for logs
     }
   }
+}
+
+# =============================================================================
+# Optional Service Configuration
+# =============================================================================
+# Service configuration toggles for firewall rules
+# These are the default values and can be omitted if you want these settings
+# Uncomment and modify only if you need different settings
+
+services = {
+  # Management services
+  enable_ssh               = true    # SSH access (port 22)
+  enable_conf_provisioning = true    # Conferencing Node Provisioning (port 8443)
+
+  # Call services
+  enable_sip   = true    # SIP signaling and media
+  enable_h323  = true    # H.323 signaling and media
+  enable_teams = true    # Microsoft Teams media
+  enable_gmeet = true    # Google Meet media
+
+  # Optional services
+  enable_teams_hub = true    # Microsoft Teams hub
+  enable_syslog    = true    # Syslog
+  enable_smtp      = true    # SMTP
+  enable_ldap      = true    # LDAP
 }

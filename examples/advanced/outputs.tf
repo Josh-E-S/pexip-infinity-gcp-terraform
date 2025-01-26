@@ -98,6 +98,6 @@ output "z_connection_info" { # Using z_ to ensure this is the last output
 
     ================================================================================
     Note: Initial configuration of the Management Node is required before accessing
-    the web interface. Please refer to Pexip documentation for setup instructions.
+       the web interface. Please refer to Pexip documentation for setup instructions.
     EOT
 }

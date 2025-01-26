@@ -25,53 +25,14 @@ variable "regions" {
 # =============================================================================
 
 variable "management_access" {
-  description = "(Optional) CIDR ranges for management access (admin UI, SSH, provisioning). For production, restrict this to your organization's IP ranges."
+  description = "CIDR ranges for management access (admin UI, SSH, provisioning). Must be specified for security purposes."
   type = object({
     cidr_ranges = list(string)
   })
-  default = {
-    cidr_ranges = ["0.0.0.0/0"]
-  }
+
   validation {
     condition     = length(var.management_access.cidr_ranges) > 0
     error_message = "At least one CIDR range must be specified for management access"
-  }
-}
-
-# =============================================================================
-# Service Configuration
-# =============================================================================
-
-variable "services" {
-  description = "(Optional) Service configuration toggles. Enable only the services you need to minimize attack surface."
-  type = object({
-    # Management services
-    enable_ssh               = optional(bool) # (Optional) SSH access to nodes, default: true
-    enable_conf_provisioning = optional(bool) # (Optional) Conferencing node provisioning, default: true
-
-    # Call services (inbound)
-    enable_sip   = optional(bool) # (Optional) SIP/SIP-TLS calling, default: true
-    enable_h323  = optional(bool) # (Optional) H.323 calling, default: true
-    enable_teams = optional(bool) # (Optional) Microsoft Teams integration, default: true
-    enable_gmeet = optional(bool) # (Optional) Google Meet integration, default: true
-
-    # Optional services
-    enable_teams_hub = optional(bool) # (Optional) Teams Connector Azure Event Hub, default: false
-    enable_syslog    = optional(bool) # (Optional) External syslog, default: false
-    enable_smtp      = optional(bool) # (Optional) Email notifications, default: false
-    enable_ldap      = optional(bool) # (Optional) LDAP authentication, default: false
-  })
-  default = {
-    enable_ssh               = true
-    enable_conf_provisioning = true
-    enable_sip               = true
-    enable_h323              = true
-    enable_teams             = true
-    enable_gmeet             = true
-    enable_teams_hub         = false
-    enable_syslog            = false
-    enable_smtp              = false
-    enable_ldap              = false
   }
 }
 
@@ -80,7 +41,7 @@ variable "services" {
 # =============================================================================
 
 variable "pexip_images" {
-  description = "(Required) Pexip Infinity image configuration. Two options are available:\n  1. Upload your own images (set upload_files = true and provide source_file paths)\n  2. Use existing images (set upload_files = false and provide image_names)"
+  description = "(Required) Pexip Infinity image configuration. Two options are available:\n  1. Upload and create your own images (set upload_files = true and provide source_file paths and image_names)\n  2. Use existing images (set upload_files = false and provide image_names)"
   type = object({
     upload_files = bool
     management = object({
@@ -122,7 +83,7 @@ variable "management_node" {
 }
 
 variable "transcoding_nodes" {
-  description = "(Optional) Transcoding nodes configuration per region. These handle media processing. If not specified, no transcoding nodes will be created."
+  description = "Transcoding nodes configuration per region. These handle media processing. At least one transcoding node is required."
   type = object({
     regional_config = map(object({
       count        = number           # Number of nodes in this region
@@ -132,9 +93,7 @@ variable "transcoding_nodes" {
       disk_size    = optional(number) # (Optional) Boot disk size in GB, defaults to 50
     }))
   })
-  default = {
-    regional_config = {}
-  }
+
   validation {
     condition = alltrue([for k, v in var.transcoding_nodes.regional_config :
       can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", v.name)) &&
@@ -144,7 +103,7 @@ variable "transcoding_nodes" {
 }
 
 variable "proxy_nodes" {
-  description = "(Optional) Proxy nodes configuration per region. These handle call signaling and client connections. If not specified, no proxy nodes will be created."
+  description = "(Optional) Proxy nodes configuration per region. These proxy external call signaling and client connections only. If not specified, no proxy nodes will be created."
   type = object({
     regional_config = map(object({
       count        = number           # Number of nodes in this region
@@ -162,5 +121,42 @@ variable "proxy_nodes" {
       can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", v.name)) &&
     v.count > 0])
     error_message = "For each region: name must be valid and count must be greater than 0"
+  }
+}
+
+# =============================================================================
+# Service Configuration
+# =============================================================================
+
+variable "services" {
+  description = "(Optional) Service configuration toggles. Enable only the services you need."
+  type = object({
+    # Management services
+    enable_ssh               = optional(bool) # (Optional) SSH access to nodes, default: true
+    enable_conf_provisioning = optional(bool) # (Optional) Conferencing node provisioning, default: true
+
+    # Call services (inbound)
+    enable_sip   = optional(bool) # (Optional) SIP/SIP-TLS calling, default: true
+    enable_h323  = optional(bool) # (Optional) H.323 calling, default: true
+    enable_teams = optional(bool) # (Optional) Microsoft Teams integration, default: true
+    enable_gmeet = optional(bool) # (Optional) Google Meet integration, default: true
+
+    # Optional services
+    enable_teams_hub = optional(bool) # (Optional) Teams Connector Azure Event Hub, default: false
+    enable_syslog    = optional(bool) # (Optional) External syslog, default: false
+    enable_smtp      = optional(bool) # (Optional) Email notifications, default: false
+    enable_ldap      = optional(bool) # (Optional) LDAP authentication, default: false
+  })
+  default = {
+    enable_ssh               = true
+    enable_conf_provisioning = true
+    enable_sip               = true
+    enable_h323              = true
+    enable_teams             = true
+    enable_gmeet             = true
+    enable_teams_hub         = false
+    enable_syslog            = false
+    enable_smtp              = false
+    enable_ldap              = false
   }
 }

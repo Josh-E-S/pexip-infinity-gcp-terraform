@@ -1,20 +1,14 @@
 # =============================================================================
-# Required Parameters
+# Required Variables Configuration
 # =============================================================================
-# The project ID is required for all GCP resource creation
-# This should be a valid GCP project with the necessary APIs enabled
 
+# GCP project ID where Pexip Infinity will be deployed
 project_id = "your-project-id"
 
 # =============================================================================
 # Network Configuration
 # =============================================================================
-# Define your region for deployment
-# Region requirements:
-#  - A pre-existing VPC network
-#  - A pre-existing subnet within that network
-#  - Proper firewall rules (created automatically by this module)
-
+# Network Configuration - Must have an existing VPC network and subnet
 regions = [{
   region      = "us-central1"     # Primary region for deployment
   network     = "pexip-infinity"  # Name of existing VPC network
@@ -31,56 +25,75 @@ regions = [{
 #  - Conferencing Node Provisioning (port 8443)
 
 management_access = {
-  cidr_ranges = ["0.0.0.0/0"]  # Replace with your allowed IP ranges
+  cidr_ranges = [
+    "10.0.0.0/8",        # Internal corporate network example
+    "192.168.0.0/16",    # VPN network example
+    "203.0.113.0/24"     # Office network example
+  ]
 }
 
 # =============================================================================
 # Image Configuration
 # =============================================================================
-# Option 1: Using existing images from your GCP project
+# Using existing images from your GCP project
 pexip_images = {
   upload_files = false  # Set to false when using existing GCP images
   management = {
-    image_name = "pexip-infinity-management-v36"  # Name of existing management node image in GCP
+    image_name  = "pexip-infinity-management-v36"   # Name of existing management node image
+    source_file = null                              # Not required when upload_files = false
   }
   conferencing = {
-    image_name = "pexip-infinity-conferencing-v36"  # Name of existing conferencing node image in GCP
+    image_name  = "pexip-infinity-conferencing-v36" # Name of existing conferencing node image
+    source_file = null                              # Not required when upload_files = false
   }
 }
 
-# Option 2: Uploading new images from local files
-# Uncomment and modify the following block if you want to upload new images
-# pexip_images = {
-#   upload_files = true   # Set to true to upload new images
-#   management = {
-#     source_file = "/path/to/Pexip_Infinity_Management_Node_v36.tar.gz"
-#     image_name  = "pexip-infinity-management-v36"
-#   }
-#   conferencing = {
-#     source_file = "/path/to/Pexip_Infinity_Conferencing_Node_v36.tar.gz"
-#     image_name  = "pexip-infinity-conferencing-v36"
-#   }
-# }
+# =============================================================================
+# Node Configuration
+# =============================================================================
+# Node names will be automatically formatted as: {name}-{region} for single nodes
+# or {name}-{region}-{index} for multiple nodes
 
-# =============================================================================
-# Node Configurations
-# =============================================================================
 # Management Node Configuration
-# This node handles all system configuration
 management_node = {
-  name      = "mgmt-1"
+  name      = "mgmt"          # Will become mgmt-us-central1
   region    = "us-central1"   # Must match one of the regions above
-  public_ip = true           # Set false for internal-only access
+  public_ip = true            # Set false for internal-only access
 }
 
 # Transcoding Node Configuration
 transcoding_nodes = {
   regional_config = {
-    "us-central1" = {
-      count     = 1
-      name      = "transcode"
-      public_ip = true       # Required for external participants
-      machine_type = "n2-highcpu-8"
+    "us-central1" = {                  # Region definition- must match one of the regions above
+      count        = 1                 # Single node: will be named transcode-us-central1
+      name         = "transcode"       # Base name for instance
+      public_ip    = true              # Set false for internal-only access
+      machine_type = "n2-highcpu-4"    # Machine type based on capacity
     }
   }
 }
+
+# =============================================================================
+# Optional Service Configuration
+# =============================================================================
+# Service configuration toggles for firewall rules
+# These are the default values and can be omitted if you want these settings
+# Uncomment and modify only if you need different settings
+
+# services = {
+#   # Management services (default: enabled)
+#   enable_ssh               = true    # SSH access (port 22)
+#   enable_conf_provisioning = true    # Conferencing Node Provisioning (port 8443)
+#
+#   # Call services (default: enabled)
+#   enable_sip   = true    # SIP signaling and media
+#   enable_h323  = true    # H.323 signaling and media
+#   enable_teams = true    # Microsoft Teams media
+#   enable_gmeet = true    # Google Meet media
+#
+#   # Optional services (default: disabled)
+#   enable_teams_hub = false    # Microsoft Teams hub
+#   enable_syslog    = false    # Syslog
+#   enable_smtp      = false    # SMTP
+#   enable_ldap      = false    # LDAP
+# }
