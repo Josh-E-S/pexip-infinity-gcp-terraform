@@ -150,23 +150,23 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
 
 6. Transcoding Node Configuration:
    ```hcl
-   # Add addtional transcoding blocks as needed for additional regions and sizes
+   # Add additional transcoding blocks as needed for additional regions and sizes
 
    transcoding_nodes = {
      regional_config = {
-       "us-east1" = {                   # Region definition- must match one of the regions above
-         count     = 1                  # Number of nodes to deploy in this region
-         name      = "transcode"        # Name prefix for instances
-         public_ip = true               # Whether to assign public IPs
-         machine_type = "n2-highcpu-8"  # Machine type based on capacity
+       "us-east1" = {                  # Region definition- must match one of the regions above
+         count        = 1              # Number of nodes to deploy in this region
+         name         = "transcode"    # Name prefix for instances
+         public_ip    = true           # Whether to assign public IPs
+         machine_type = "n2-highcpu-8" # Machine type based on capacity
        }
      }
    }
    ```
 
-1. Proxy Node Configuration (optional)
+7. Proxy Node Configuration (optional)
    ```hcl
-   # Add addtional proxy blocks as needed for additional regions and sizes
+   # Add additional proxy blocks as needed for additional regions and sizes
 
    proxy_nodes = {
      regional_config = {
@@ -174,7 +174,7 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
          count     = 1                   # Number of nodes to deploy in this region
          name      = "proxy"             # Name prefix for the instance
          public_ip = true                # Whether to assign a public IP
-         machine_type = "n2-highcpu-4"   # Default recommended by Pexip
+         machine_type = "n2-highcpu-4"   # Standard proxy specification
        }
      }
    }
