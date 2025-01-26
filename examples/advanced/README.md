@@ -182,7 +182,9 @@ This example creates a comprehensive infrastructure for running Pexip Infinity o
    }
    ```
 
-7. Proxy Node Configuration:
+### Optional Variables Configuration
+
+1. Proxy Node Configuration:
    ```hcl
    # Proxy Node Configuration
    proxy_nodes = {
@@ -198,9 +200,7 @@ This example creates a comprehensive infrastructure for running Pexip Infinity o
    }
    ```
 
-### Optional Variables Configuration
-
-1. Services Configuration:
+2. Services Configuration:
    ```hcl
    # Service configuration toggles for firewall rules
    services = {
