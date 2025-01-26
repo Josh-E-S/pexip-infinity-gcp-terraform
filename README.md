@@ -141,12 +141,12 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
 5. Management Node Configuration:
    ```hcl
    management_node = {
-     name      = "mgmt-1"            # Name prefix for the instance
-     region    = "us-central1"       # Region definition- must match one of the regions above
-     public_ip = true                # Whether to assign a public IP
-     machine_type = "n2-highcpu-4"   # Default recommended by Pexip
+     name         = "mgmt-1"        # Name prefix for the instance
+     region       = "us-central1"   # Region definition- must match one of the regions above
+     public_ip    = true           # Whether to assign a public IP
+     machine_type = "n2-highcpu-4" # Default recommended by Pexip
    }
-   '''
+   ```
 
 6. Transcoding Node Configuration:
    ```hcl
@@ -164,7 +164,7 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
    }
    ```
 
-7. Proxy Node Configuration (optional)
+7. Proxy Node Configuration (optional):
    ```hcl
    # Add additional proxy blocks as needed for additional regions and sizes
 
