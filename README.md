@@ -164,7 +164,9 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
    }
    ```
 
-7. Proxy Node Configuration (optional):
+### Optional Variables Configuration
+
+1. Proxy Node Configuration (optional):
    ```hcl
    # Add additional proxy blocks as needed for additional regions and sizes
 
