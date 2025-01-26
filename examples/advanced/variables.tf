@@ -7,14 +7,10 @@ variable "project_id" {
   type        = string
 }
 
-# =============================================================================
-# Network Configuration Variables
-# =============================================================================
-
 variable "regions" {
   description = "(Required) List of regions and their network configurations. Each region must have an existing VPC network and subnet."
   type = list(object({
-    region      = string # Region name
+    region      = string # Region name (e.g., us-central1)
     network     = string # Name of existing VPC network
     subnet_name = string # Name of existing subnet in the VPC
   }))
@@ -24,67 +20,57 @@ variable "regions" {
   }
 }
 
-# =============================================================================
-# Management Access Variables
-# =============================================================================
-
 variable "management_access" {
-  description = "(Optional) CIDR ranges for management access (admin UI, SSH, provisioning). For production, restrict this to your organization's IP ranges."
+  description = "(Required) CIDR ranges for management access (admin UI, SSH, provisioning)"
   type = object({
     cidr_ranges = list(string)
   })
-  default = {
-    cidr_ranges = ["0.0.0.0/0"]
-  }
   validation {
     condition     = length(var.management_access.cidr_ranges) > 0
     error_message = "At least one CIDR range must be specified for management access"
   }
 }
 
-# =============================================================================
-# Service Configuration Variables
-# =============================================================================
-
 variable "services" {
-  description = "(Optional) Service configuration toggles. Enable only the services you need to minimize attack surface."
+  description = "(Optional) Service configuration toggles for firewall rules"
   type = object({
     # Management services
-    enable_ssh               = optional(bool) # (Optional) SSH access to nodes, default: true
-    enable_conf_provisioning = optional(bool) # (Optional) Conferencing node provisioning, default: true
+    enable_ssh               = bool
+    enable_conf_provisioning = bool
 
-    # Call services (inbound)
-    enable_sip   = optional(bool) # (Optional) SIP/SIP-TLS calling, default: true
-    enable_h323  = optional(bool) # (Optional) H.323 calling, default: true
-    enable_teams = optional(bool) # (Optional) Microsoft Teams integration, default: true
-    enable_gmeet = optional(bool) # (Optional) Google Meet integration, default: true
+    # Call services
+    enable_sip   = bool
+    enable_h323  = bool
+    enable_teams = bool
+    enable_gmeet = bool
 
     # Optional services
-    enable_teams_hub = optional(bool) # (Optional) Teams Connector Azure Event Hub, default: false
-    enable_syslog    = optional(bool) # (Optional) External syslog, default: false
-    enable_smtp      = optional(bool) # (Optional) Email notifications, default: false
-    enable_ldap      = optional(bool) # (Optional) LDAP authentication, default: false
+    enable_teams_hub = bool
+    enable_syslog    = bool
+    enable_smtp      = bool
+    enable_ldap      = bool
   })
   default = {
+    # Management services default to enabled
     enable_ssh               = true
     enable_conf_provisioning = true
-    enable_sip               = true
-    enable_h323              = true
-    enable_teams             = true
-    enable_gmeet             = true
-    enable_teams_hub         = false
-    enable_syslog            = false
-    enable_smtp              = false
-    enable_ldap              = false
+
+    # Call services default to enabled
+    enable_sip   = true
+    enable_h323  = true
+    enable_teams = true
+    enable_gmeet = true
+
+    # Optional services default to disabled
+    enable_teams_hub = false
+    enable_syslog    = false
+    enable_smtp      = false
+    enable_ldap      = false
   }
 }
 
-# =============================================================================
-# Image Configuration Variables
-# =============================================================================
-
 variable "pexip_images" {
-  description = "(Required) Pexip Infinity image configuration. Two options are available:\n  1. Upload your own images (set upload_files = true and provide source_file paths)\n  2. Use existing images (set upload_files = false and provide image_names)"
+  description = "(Required) Configuration for Pexip Infinity images"
   type = object({
     upload_files = bool
     management = object({
@@ -106,16 +92,12 @@ variable "pexip_images" {
   }
 }
 
-# =============================================================================
-# Node Configuration Variables
-# =============================================================================
-
 variable "management_node" {
-  description = "(Required) Management node configuration. Only one management node can be deployed."
+  description = "(Required) Management node configuration"
   type = object({
     name         = string           # Name for the management node
     region       = string           # Must match one of the deployment regions
-    public_ip    = optional(bool)   # (Optional) Whether to assign a public IP, defaults to true
+    public_ip    = bool             # Whether to assign a public IP
     machine_type = optional(string) # (Optional) Defaults to n2-highcpu-4
     disk_size    = optional(number) # (Optional) Boot disk size in GB, defaults to 100
   })
@@ -126,19 +108,16 @@ variable "management_node" {
 }
 
 variable "transcoding_nodes" {
-  description = "(Optional) Transcoding nodes configuration per region. These handle media processing. If not specified, no transcoding nodes will be created."
+  description = "(Required) Transcoding nodes configuration"
   type = object({
     regional_config = map(object({
       count        = number           # Number of nodes in this region
       name         = string           # Name prefix for the nodes
-      public_ip    = optional(bool)   # (Optional) Whether to assign public IPs, defaults to true
+      public_ip    = bool             # Whether to assign public IPs
       machine_type = optional(string) # (Optional) Defaults to n2-highcpu-8
       disk_size    = optional(number) # (Optional) Boot disk size in GB, defaults to 50
     }))
   })
-  default = {
-    regional_config = {}
-  }
   validation {
     condition = alltrue([for k, v in var.transcoding_nodes.regional_config :
       can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", v.name)) &&
@@ -148,12 +127,12 @@ variable "transcoding_nodes" {
 }
 
 variable "proxy_nodes" {
-  description = "(Optional) Proxy nodes configuration per region. These handle call signaling and client connections. If not specified, no proxy nodes will be created."
+  description = "(Optional) Proxy nodes configuration per region. These proxy external call signaling and client connections only."
   type = object({
     regional_config = map(object({
       count        = number           # Number of nodes in this region
       name         = string           # Name prefix for the nodes
-      public_ip    = optional(bool)   # (Optional) Whether to assign public IPs, defaults to true
+      public_ip    = bool             # Whether to assign public IPs
       machine_type = optional(string) # (Optional) Defaults to n2-highcpu-4
       disk_size    = optional(number) # (Optional) Boot disk size in GB, defaults to 50
     }))
