@@ -9,7 +9,7 @@ terraform {
 }
 
 module "pexip" {
-  source = "../../" # This will be terraform-gcp-modules/pexip-infinity/google in production
+  source = "../../" # This will be Josh-E-S/pexip-infinity/google in production
 
   # =============================================================================
   # Required Configuration

@@ -208,7 +208,7 @@ If you prefer to add the module to your existing Terraform configuration, here's
 
 ```hcl
 module "pexip-infinity" {
-  source  = "Josh-E-S/pexip-infinity/gcp"
+  source  = "Josh-E-S/pexip-infinity/google"
   version = "x.y.z"
 
   # Insert required and optional variables here
@@ -232,7 +232,7 @@ To get started:
 
 For detailed configuration options, see the [Configuration](#configuration) section below.
 
-> **Note**: For the latest version number, check the [Terraform Registry](https://registry.terraform.io/modules/Josh-E-S/pexip-infinity/gcp/latest) or releases page.
+> **Note**: For the latest version number, check the [Terraform Registry](https://registry.terraform.io/modules/Josh-E-S/pexip-infinity/google/latest) or releases page.
 
 ## Configuration
 
