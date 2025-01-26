@@ -79,11 +79,14 @@ This example creates a comprehensive infrastructure for running Pexip Infinity o
 
 ### Required Variables Configuration
 
-1. Project and Network:
+1. Project:
    ```hcl
    # GCP project ID where Pexip Infinity will be deployed
    project_id = "your-project-id"
+   ```
 
+2. Network Configuration:
+   ```hcl
    # Network Configuration - Must have existing VPC networks and subnets
    regions = [
      {
@@ -104,7 +107,7 @@ This example creates a comprehensive infrastructure for running Pexip Infinity o
    ]
    ```
 
-2. Image Configuration:
+3. Image Configuration:
    ```hcl
    # Upload and convert Pexip images from local files
    pexip_images = {
@@ -120,7 +123,7 @@ This example creates a comprehensive infrastructure for running Pexip Infinity o
    }
    ```
 
-3. Management Access Configuration:
+4. Management Access Configuration:
    ```hcl
    # Define CIDR ranges that can access management interfaces
    # This includes:
@@ -137,11 +140,8 @@ This example creates a comprehensive infrastructure for running Pexip Infinity o
    }
    ```
 
-4. Node Configuration:
+5. Management Node Configuration:
    ```hcl
-   # Node names will be automatically formatted as: {name}-{region} for single nodes
-   # or {name}-{region}-{index} for multiple nodes (e.g., transcode-us-east1-1)
-
    # Management Node Configuration
    management_node = {
      name         = "mgmt"            # Will become mgmt-us-central1
@@ -150,7 +150,10 @@ This example creates a comprehensive infrastructure for running Pexip Infinity o
      machine_type = "n2-highcpu-8"    # Enhanced for larger deployments
      disk_size    = 150               # Larger disk for logs
    }
+   ```
 
+6. Transcoding Node Configuration:
+   ```hcl
    # Transcoding Node Configuration
    transcoding_nodes = {
      regional_config = {
@@ -177,7 +180,10 @@ This example creates a comprehensive infrastructure for running Pexip Infinity o
        }
      }
    }
+   ```
 
+7. Proxy Node Configuration:
+   ```hcl
    # Proxy Node Configuration
    proxy_nodes = {
      regional_config = {

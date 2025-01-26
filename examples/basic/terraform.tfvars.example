@@ -1,5 +1,5 @@
 # =============================================================================
-# Required Variables Configuration
+# Project Configuration
 # =============================================================================
 
 # GCP project ID where Pexip Infinity will be deployed
@@ -8,6 +8,7 @@ project_id = "your-project-id"
 # =============================================================================
 # Network Configuration
 # =============================================================================
+
 # Network Configuration - Must have an existing VPC network and subnet
 regions = [{
   region      = "us-central1"     # Primary region for deployment
@@ -16,8 +17,26 @@ regions = [{
 }]
 
 # =============================================================================
+# Image Configuration
+# =============================================================================
+
+# Using existing images from your GCP project
+pexip_images = {
+  upload_files = false  # Set to false when using existing GCP images
+  management = {
+    image_name  = "pexip-infinity-management-v36"   # Name of existing management node image
+    source_file = null                              # Not required when upload_files = false
+  }
+  conferencing = {
+    image_name  = "pexip-infinity-conferencing-v36" # Name of existing conferencing node image
+    source_file = null                              # Not required when upload_files = false
+  }
+}
+
+# =============================================================================
 # Management Access Configuration
 # =============================================================================
+
 # Define CIDR ranges that can access management interfaces
 # This includes:
 #  - SSH access (port 22)
@@ -33,26 +52,10 @@ management_access = {
 }
 
 # =============================================================================
-# Image Configuration
+# Management Node Configuration
 # =============================================================================
-# Using existing images from your GCP project
-pexip_images = {
-  upload_files = false  # Set to false when using existing GCP images
-  management = {
-    image_name  = "pexip-infinity-management-v36"   # Name of existing management node image
-    source_file = null                              # Not required when upload_files = false
-  }
-  conferencing = {
-    image_name  = "pexip-infinity-conferencing-v36" # Name of existing conferencing node image
-    source_file = null                              # Not required when upload_files = false
-  }
-}
 
-# =============================================================================
-# Node Configuration
-# =============================================================================
-# Node names will be automatically formatted as: {name}-{region} for single nodes
-# or {name}-{region}-{index} for multiple nodes
+# Node name will be automatically formatted as: {name}-{region}
 
 # Management Node Configuration
 management_node = {
@@ -61,6 +64,13 @@ management_node = {
   public_ip = true            # Set false for internal-only access
   machine_type = "n2-highcpu-4"    # Pexip recommended
 }
+
+# =============================================================================
+# Transcoding Node Configuration
+# =============================================================================
+
+# Node names will be automatically formatted as: {name}-{region} for single nodes
+# or {name}-{region}-{index} for multiple nodes
 
 # Transcoding Node Configuration
 transcoding_nodes = {
@@ -77,6 +87,7 @@ transcoding_nodes = {
 # =============================================================================
 # Optional Service Configuration
 # =============================================================================
+
 # Service configuration toggles for firewall rules
 # These are the default values and can be omitted if you want these settings
 # Uncomment and modify only if you need different settings

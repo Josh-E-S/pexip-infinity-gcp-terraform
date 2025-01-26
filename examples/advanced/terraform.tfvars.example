@@ -1,5 +1,5 @@
 # =============================================================================
-# Required Variables Configuration
+# Project Configuration
 # =============================================================================
 
 # GCP project ID where Pexip Infinity will be deployed
@@ -8,6 +8,7 @@ project_id = "your-project-id"
 # =============================================================================
 # Network Configuration
 # =============================================================================
+
 # Network Configuration - Must have existing VPC networks and subnets
 regions = [
   {
@@ -33,8 +34,26 @@ regions = [
 ]
 
 # =============================================================================
+# Image Configuration
+# =============================================================================
+
+# Upload and convert Pexip images from local files
+pexip_images = {
+  upload_files = true   # Set to true to upload new images
+  management = {
+    source_file = "/path/to/Pexip_Infinity_Management_Node_v36.tar.gz"  # Full path to local management node image
+    image_name  = "pexip-infinity-management-v36"  # Name to give the image in GCP
+  }
+  conferencing = {
+    source_file = "/path/to/Pexip_Infinity_Conferencing_Node_v36.tar.gz"  # Full path to local conferencing node image
+    image_name  = "pexip-infinity-conferencing-v36"  # Name to give the image in GCP
+  }
+}
+
+# =============================================================================
 # Management Access Configuration
 # =============================================================================
+
 # Define CIDR ranges that can access management interfaces
 # This includes:
 #  - SSH access (port 22)
@@ -50,28 +69,11 @@ management_access = {
 }
 
 # =============================================================================
-# Image Configuration
-# =============================================================================
-# Upload and convert Pexip images from local files
-pexip_images = {
-  upload_files = true   # Set to true to upload new images
-  management = {
-    source_file = "/path/to/Pexip_Infinity_Management_Node_v36.tar.gz"  # Full path to local management node image
-    image_name  = "pexip-infinity-management-v36"  # Name to give the image in GCP
-  }
-  conferencing = {
-    source_file = "/path/to/Pexip_Infinity_Conferencing_Node_v36.tar.gz"  # Full path to local conferencing node image
-    image_name  = "pexip-infinity-conferencing-v36"  # Name to give the image in GCP
-  }
-}
-
-# =============================================================================
-# Node Configuration
-# =============================================================================
-# Node names will be automatically formatted as: {name}-{region} for single nodes
-# or {name}-{region}-{index} for multiple nodes (e.g., transcode-us-east1-1)
-
 # Management Node Configuration
+# =============================================================================
+
+# Node name will be automatically formatted as: {name}-{region}
+
 management_node = {
   name         = "mgmt"            # Will become mgmt-us-central1
   region       = "us-central1"
@@ -80,7 +82,13 @@ management_node = {
   disk_size    = 150               # Larger disk for logs
 }
 
+# =============================================================================
 # Transcoding Node Configuration
+# =============================================================================
+
+# Node names will be automatically formatted as: {name}-{region} for single nodes
+# or {name}-{region}-{index} for multiple nodes
+
 transcoding_nodes = {
   regional_config = {
     "us-east1" = {
@@ -107,7 +115,13 @@ transcoding_nodes = {
   }
 }
 
+# =============================================================================
 # Proxy Node Configuration
+# =============================================================================
+
+# Node names will be automatically formatted as: {name}-{region} for single nodes
+# or {name}-{region}-{index} for multiple nodes
+
 proxy_nodes = {
   regional_config = {
     "europe-west1" = {
@@ -121,8 +135,9 @@ proxy_nodes = {
 }
 
 # =============================================================================
-# Optional Service Configuration
+# Optional Services Configuration
 # =============================================================================
+
 # Service configuration toggles for firewall rules
 # These are the default values and can be omitted if you want these settings
 # Uncomment and modify only if you need different settings

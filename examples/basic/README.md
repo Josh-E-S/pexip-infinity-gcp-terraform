@@ -76,11 +76,14 @@ This example creates the essential infrastructure needed to run Pexip Infinity o
 
 ### Required Variables Configuration
 
-1. Project and Network:
+1. Project:
    ```hcl
    # GCP project ID where Pexip Infinity will be deployed
    project_id = "your-project-id"
+   ```
 
+2. Network Configuration:
+   ```hcl
    # Network Configuration - Must have an existing VPC network and subnet
    regions = [{
      region      = "us-central1"     # Primary region for deployment
@@ -89,7 +92,7 @@ This example creates the essential infrastructure needed to run Pexip Infinity o
    }]
    ```
 
-2. Image Configuration:
+3. Image Configuration:
    ```hcl
    # Using existing images from your GCP project
    pexip_images = {
@@ -103,7 +106,7 @@ This example creates the essential infrastructure needed to run Pexip Infinity o
    }
    ```
 
-3. Management Access Configuration:
+4. Management Access Configuration:
    ```hcl
    # Define CIDR ranges that can access management interfaces
    # This includes:
@@ -120,7 +123,7 @@ This example creates the essential infrastructure needed to run Pexip Infinity o
    }
    ```
 
-4. Node Configuration:
+5. Management Node Configuration:
    ```hcl
    # Management Node Configuration
    management_node = {
@@ -129,7 +132,10 @@ This example creates the essential infrastructure needed to run Pexip Infinity o
      public_ip = true                 # Set false for internal-only access
      machine_type = "n2-highcpu-4"    # Pexip recommended
    }
+   ```
 
+6. Transcoding Node Configuration:
+   ```hcl
    # Transcoding Node Configuration
    transcoding_nodes = {
      regional_config = {
