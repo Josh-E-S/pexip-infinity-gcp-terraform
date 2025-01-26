@@ -10,7 +10,7 @@ All required files are included in this directory. To use this example:
 1. Copy all files from this directory to your workspace
 2. Rename `terraform.tfvars.example` to `terraform.tfvars`
 3. Update the values in `terraform.tfvars` with your configuration
-4. Run `terraform init` and `terraform apply`
+4. Run `terraform init`, `terraform plan`, and `terraform apply`
 
 ## Overview
 
