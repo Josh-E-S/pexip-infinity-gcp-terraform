@@ -37,5 +37,10 @@ module "pexip" {
   management_node   = var.management_node
   transcoding_nodes = var.transcoding_nodes
 
+  # =============================================================================
+  # Optional Configuration
+  # =============================================================================
+
   # The module will use default values for all other optional parameters
+  services = var.services
 }
