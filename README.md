@@ -177,7 +177,7 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
    }
    ```
 
-6. Services Configuration:
+6. Services Configuration (optional):
    ```hcl
    # Create firewall rules for each service as needed. See Pexip's documentation for detailed port information:
    # (https://docs.pexip.com/admin/port_usage.htm)
@@ -196,36 +196,43 @@ This module creates the core infrastructure needed to run Pexip Infinity on Goog
    }
    ```
 
-For detailed configuration options, see the [examples](./examples) directory. A full .tfvars file is provided for an easy start.
-
 ## Quick Start
 
-1. Clone the repository:
-```bash
-git clone https://github.com/Josh-E-S/terraform-gcp-pexip-infinity.git
-cd terraform-gcp-pexip-infinity
+This module includes comprehensive example configurations to get you started quickly:
+- **Basic**: A simple deployment with minimal configuration
+- **Advanced**: A full-featured deployment with all available options
+
+Both examples include pre-created `main.tf`, `variables.tf`, `outputs.tf`, and `terraform.tfvars` files. After running `terraform init`, you'll find these examples in `.terraform/modules/pexip-infinity/examples/`.
+
+If you prefer to add the module to your existing Terraform configuration, here's the minimal setup:
+
+```hcl
+module "pexip-infinity" {
+  source  = "Josh-E-S/pexip-infinity/gcp"
+  version = "x.y.z"
+
+  # Insert required and optional variables here
+  # See Configuration section below for details
+}
 ```
 
-2. Choose an example configuration:
-```bash
-# For a basic setup
-cd examples/basic
-# For a full-featured setup
-cd examples/advanced
-```
+To get started:
 
-3. Copy and modify the variables file:
-```bash
-cp terraform.tfvars.sample terraform.tfvars
-# Edit terraform.tfvars with your values
-```
+1. Initialize your Terraform workspace:
+   ```bash
+   terraform init
+   ```
 
-4. Initialize and apply:
-```bash
-terraform init
-terraform plan
-terraform apply
-```
+2. Copy and customize an example configuration, or add the module to your existing configuration.
+
+3. Apply the configuration:
+   ```bash
+   terraform apply
+   ```
+
+For detailed configuration options, see the [Configuration](#configuration) section below.
+
+> **Note**: For the latest version number, check the [Terraform Registry](https://registry.terraform.io/modules/Josh-E-S/pexip-infinity/gcp/latest) or releases page.
 
 ## Configuration
 
