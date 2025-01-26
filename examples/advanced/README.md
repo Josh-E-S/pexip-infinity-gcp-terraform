@@ -5,39 +5,12 @@ This example demonstrates a full-featured, multi-region deployment of Pexip Infi
 
 ## Quick Start
 
-1. Initialize the module in your Terraform workspace:
-   ```bash
-   terraform init
-   ```
+All required files are included in this directory. To use this example:
 
-2. Create a new directory for your deployment:
-   ```bash
-   mkdir pexip-deployment
-   cd pexip-deployment
-   ```
-
-3. Copy the example files to your deployment directory:
-   ```bash
-   # Copy from the examples/advanced directory after module initialization
-   cp .terraform/modules/*/examples/advanced/* .
-
-   # Rename the tfvars example file
-   mv terraform.tfvars.example terraform.tfvars
-   ```
-
-4. Update `terraform.tfvars` with your specific values:
-   - Set your GCP project ID
-   - Configure your network settings for each region
-   - Set your management access CIDR ranges
-   - Specify your Pexip image names
-   - Configure nodes for each region
-   - Enable/disable optional services as needed
-
-5. Deploy the infrastructure:
-   ```bash
-   terraform plan    # Review the changes
-   terraform apply   # Deploy the infrastructure
-   ```
+1. Copy all files from this directory to your workspace
+2. Rename `terraform.tfvars.example` to `terraform.tfvars`
+3. Update the values in `terraform.tfvars` with your configuration
+4. Run `terraform init` and `terraform apply`
 
 ## Overview
 
