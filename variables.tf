@@ -25,13 +25,11 @@ variable "regions" {
 # =============================================================================
 
 variable "management_access" {
-  description = "(Optional) CIDR ranges for management access (admin UI, SSH, provisioning). For production, restrict this to your organization's IP ranges."
+  description = "CIDR ranges for management access (admin UI, SSH, provisioning). Must be specified for security purposes."
   type = object({
     cidr_ranges = list(string)
   })
-  default = {
-    cidr_ranges = ["0.0.0.0/0"]
-  }
+
   validation {
     condition     = length(var.management_access.cidr_ranges) > 0
     error_message = "At least one CIDR range must be specified for management access"
@@ -43,7 +41,7 @@ variable "management_access" {
 # =============================================================================
 
 variable "services" {
-  description = "(Optional) Service configuration toggles. Enable only the services you need to minimize attack surface."
+  description = "(Optional) Service configuration toggles. Enable only the services you need."
   type = object({
     # Management services
     enable_ssh               = optional(bool) # (Optional) SSH access to nodes, default: true
@@ -80,7 +78,7 @@ variable "services" {
 # =============================================================================
 
 variable "pexip_images" {
-  description = "(Required) Pexip Infinity image configuration. Two options are available:\n  1. Upload your own images (set upload_files = true and provide source_file paths)\n  2. Use existing images (set upload_files = false and provide image_names)"
+  description = "(Required) Pexip Infinity image configuration. Two options are available:\n  1. Upload and create your own images (set upload_files = true and provide source_file paths and image_names)\n  2. Use existing images (set upload_files = false and provide image_names)"
   type = object({
     upload_files = bool
     management = object({
@@ -122,7 +120,7 @@ variable "management_node" {
 }
 
 variable "transcoding_nodes" {
-  description = "(Optional) Transcoding nodes configuration per region. These handle media processing. If not specified, no transcoding nodes will be created."
+  description = "Transcoding nodes configuration per region. These handle media processing. At least one transcoding node is required."
   type = object({
     regional_config = map(object({
       count        = number           # Number of nodes in this region
@@ -132,9 +130,7 @@ variable "transcoding_nodes" {
       disk_size    = optional(number) # (Optional) Boot disk size in GB, defaults to 50
     }))
   })
-  default = {
-    regional_config = {}
-  }
+
   validation {
     condition = alltrue([for k, v in var.transcoding_nodes.regional_config :
       can(regex("^[a-z]([-a-z0-9]*[a-z0-9])?$", v.name)) &&
@@ -144,7 +140,7 @@ variable "transcoding_nodes" {
 }
 
 variable "proxy_nodes" {
-  description = "(Optional) Proxy nodes configuration per region. These handle call signaling and client connections. If not specified, no proxy nodes will be created."
+  description = "(Optional) Proxy nodes configuration per region. These proxy external call signaling and client connections only. If not specified, no proxy nodes will be created."
   type = object({
     regional_config = map(object({
       count        = number           # Number of nodes in this region
