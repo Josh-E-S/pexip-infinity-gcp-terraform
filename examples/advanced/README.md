@@ -3,6 +3,42 @@ Advanced Pexip Infinity Deployment Example
 
 This example demonstrates a full-featured, multi-region deployment of Pexip Infinity on Google Cloud Platform (GCP). It creates a management node, multiple transcoding nodes across regions, and proxy nodes for optimal global coverage.
 
+## Quick Start
+
+1. Initialize the module in your Terraform workspace:
+   ```bash
+   terraform init
+   ```
+
+2. Create a new directory for your deployment:
+   ```bash
+   mkdir pexip-deployment
+   cd pexip-deployment
+   ```
+
+3. Copy the example files to your deployment directory:
+   ```bash
+   # Copy from the examples/advanced directory after module initialization
+   cp .terraform/modules/*/examples/advanced/* .
+
+   # Rename the tfvars example file
+   mv terraform.tfvars.example terraform.tfvars
+   ```
+
+4. Update `terraform.tfvars` with your specific values:
+   - Set your GCP project ID
+   - Configure your network settings for each region
+   - Set your management access CIDR ranges
+   - Specify your Pexip image names
+   - Configure nodes for each region
+   - Enable/disable optional services as needed
+
+5. Deploy the infrastructure:
+   ```bash
+   terraform plan    # Review the changes
+   terraform apply   # Deploy the infrastructure
+   ```
+
 ## Overview
 
 This example creates a comprehensive infrastructure for running Pexip Infinity on Google Cloud:

@@ -81,20 +81,20 @@ transcoding_nodes = {
 # These are the default values and can be omitted if you want these settings
 # Uncomment and modify only if you need different settings
 
-# services = {
-#   # Management services (default: enabled)
-#   enable_ssh               = true    # SSH access (port 22)
-#   enable_conf_provisioning = true    # Conferencing Node Provisioning (port 8443)
-#
-#   # Call services (default: enabled)
-#   enable_sip   = true    # SIP signaling and media
-#   enable_h323  = true    # H.323 signaling and media
-#   enable_teams = true    # Microsoft Teams media
-#   enable_gmeet = true    # Google Meet media
-#
-#   # Optional services (default: disabled)
-#   enable_teams_hub = false    # Microsoft Teams hub
-#   enable_syslog    = false    # Syslog
-#   enable_smtp      = false    # SMTP
-#   enable_ldap      = false    # LDAP
-# }
+services = {
+  # Management services
+  enable_ssh               = true    # SSH access (port 22)
+  enable_conf_provisioning = true    # Conferencing Node Provisioning (port 8443)
+
+  # Call services
+  enable_sip   = true    # SIP signaling and media
+  enable_h323  = true    # H.323 signaling and media
+  enable_teams = true    # Microsoft Teams media
+  enable_gmeet = true    # Google Meet media
+
+  # Optional services
+  enable_teams_hub = false    # Microsoft Teams hub
+  enable_syslog    = false    # Syslog
+  enable_smtp      = false    # SMTP
+  enable_ldap      = false    # LDAP
+}

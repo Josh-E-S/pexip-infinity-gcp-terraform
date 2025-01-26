@@ -3,6 +3,42 @@ Basic Pexip Infinity Deployment Example
 
 This example demonstrates the minimum required configuration for deploying Pexip Infinity on Google Cloud Platform (GCP). It creates a single management node and one transcoding node in a single region.
 
+## Quick Start
+
+1. Initialize the module in your Terraform workspace:
+   ```bash
+   terraform init
+   ```
+
+2. Create a new directory for your deployment:
+   ```bash
+   mkdir pexip-deployment
+   cd pexip-deployment
+   ```
+
+3. Copy the example files to your deployment directory:
+   ```bash
+   # Copy from the examples/basic directory after module initialization
+   cp .terraform/modules/*/examples/basic/* .
+
+   # Rename the tfvars example file
+   mv terraform.tfvars.example terraform.tfvars
+   ```
+
+4. Update `terraform.tfvars` with your specific values:
+   - Set your GCP project ID
+   - Configure your network settings (VPC and subnet)
+   - Set your management access CIDR ranges
+   - Specify your Pexip image names
+   - Adjust node configurations as needed
+   - Enable or disable services as needed
+
+5. Deploy the infrastructure:
+   ```bash
+   terraform plan    # Review the changes
+   terraform apply   # Deploy the infrastructure
+   ```
+
 ## Overview
 
 This example creates the essential infrastructure needed to run Pexip Infinity on Google Cloud:
