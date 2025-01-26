@@ -2,46 +2,38 @@
 # Advanced Pexip Infinity Deployment Example
 # =============================================================================
 # This example demonstrates a full-featured deployment across multiple regions
+# with proxy nodes and image upload functionality.
 
 terraform {
   required_version = ">= 1.0.0"
 }
 
-# =============================================================================
-# Main Configuration
-# =============================================================================
 module "pexip" {
-  source = "../../" # This will be terraform-google-modules/pexip-infinity/google in production
+  source = "../../" # This will be terraform-gcp-modules/pexip-infinity/google in production
 
   # =============================================================================
-  # Project Configuration
+  # Required Configuration
   # =============================================================================
+
+  # Project Configuration
   project_id = var.project_id
 
-  # =============================================================================
-  # Multi-region Network Configuration
-  # =============================================================================
-  regions = var.regions
+  # Network Configuration
+  regions           = var.regions
+  management_access = var.management_access # CIDR ranges for management access
 
-  # =============================================================================
-  # Management Access Configuration
-  # =============================================================================
-  management_access = var.management_access
-
-  # =============================================================================
-  # Service Configuration
-  # =============================================================================
-  services = var.services
-
-  # =============================================================================
-  # Image Configuration
-  # =============================================================================
+  # Image Configuration - Upload and convert from local files
   pexip_images = var.pexip_images
 
-  # =============================================================================
-  # Node Configurations
-  # =============================================================================
+  # Node Configuration
   management_node   = var.management_node
   transcoding_nodes = var.transcoding_nodes
   proxy_nodes       = var.proxy_nodes
+
+  # =============================================================================
+  # Optional Configuration
+  # =============================================================================
+
+  # Enable all services for full-featured deployment
+  services = var.services
 }

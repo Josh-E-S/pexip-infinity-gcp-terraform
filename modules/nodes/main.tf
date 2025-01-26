@@ -42,7 +42,7 @@ resource "google_compute_address" "external_ip" {
 resource "google_compute_instance" "node" {
   count        = local.instance_count
   depends_on   = [var.apis]
-  name         = local.instance_count > 1 ? "${var.name}-${count.index + 1}" : var.name
+  name         = local.instance_count > 1 ? "${var.name}-${var.region}-${count.index + 1}" : "${var.name}-${var.region}"
   machine_type = local.machine_type
   zone         = "${var.region}-b" # Default to zone b
 

@@ -51,9 +51,12 @@ pexip_images = {
 # =============================================================================
 # Node Configuration
 # =============================================================================
+# Node names will be automatically formatted as: {name}-{region} for single nodes
+# or {name}-{region}-{index} for multiple nodes
+
 # Management Node Configuration
 management_node = {
-  name      = "mgmt-1"        # Name for the management node
+  name      = "mgmt"          # Will become mgmt-us-central1
   region    = "us-central1"   # Must match one of the regions above
   public_ip = true            # Set false for internal-only access
 }
@@ -62,8 +65,8 @@ management_node = {
 transcoding_nodes = {
   regional_config = {
     "us-central1" = {                  # Region definition- must match one of the regions above
-      count        = 1                 # Number of nodes to deploy
-      name         = "transcode"       # Name prefix for instances
+      count        = 1                 # Single node: will be named transcode-us-central1
+      name         = "transcode"       # Base name for instance
       public_ip    = true              # Set false for internal-only access
       machine_type = "n2-highcpu-4"    # Machine type based on capacity
     }
