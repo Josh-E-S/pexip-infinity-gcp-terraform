@@ -167,22 +167,6 @@ This example creates the essential infrastructure needed to run Pexip Infinity o
    }
    ```
 
-## Quick Start
-
-To use this example:
-
-1. Initialize your Terraform workspace:
-   ```bash
-   terraform init
-   ```
-
-2. Copy `terraform.tfvars.example` to `terraform.tfvars` and customize the configuration.
-
-3. Apply the configuration:
-   ```bash
-   terraform apply
-   ```
-
 ## Post-Deployment
 
 After successful deployment, you will receive:
