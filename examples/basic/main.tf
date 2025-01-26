@@ -9,7 +9,8 @@ terraform {
 }
 
 module "pexip" {
-  source = "../../" # This will be Josh-E-S/pexip-infinity/google in production
+  source  = "Josh-E-S/pexip-infinity/google"
+  version = "0.1.0"
 
   # =============================================================================
   # Required Configuration
