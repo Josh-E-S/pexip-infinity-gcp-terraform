@@ -1,8 +1,8 @@
-# This project is for community use. This is not an official Pexip repo.
-
 # Pexip Infinity Terraform Module for Google Cloud Platform (GCP)
 
 A Terraform module for deploying Pexip Infinity conferencing platform on Google Cloud. This module handles the infrastructure setup including networking configuration, compute instances, images, and firewall rules.
+
+Note: This module is for community use and not maintained by Pexip.
 
 ## Overview
 
