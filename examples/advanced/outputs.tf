@@ -73,8 +73,10 @@ output "z_connection_info" { # Using z_ to ensure this is the last output
     ================================================================================
     Management Node:
     ================================================================================
-    Web Interface: https://${values(module.pexip.management_node)[0].public_ip}
-    SSH Access: ssh -i pexip_key admin@${values(module.pexip.management_node)[0].public_ip}
+    %{for name, instance in module.pexip.management_node~}
+    Web Interface: https://${instance.public_ip != null ? instance.public_ip : instance.private_ip}
+    SSH Access: ssh -i pexip_key admin@${instance.public_ip != null ? instance.public_ip : instance.private_ip}
+    %{endfor~}
 
     ================================================================================
     Transcoding Node IPs:
@@ -82,7 +84,7 @@ output "z_connection_info" { # Using z_ to ensure this is the last output
     %{for region, instances in module.pexip.transcoding_nodes~}
     ${region}:
     %{for name, instance in instances~}
-    ${name}: https://${instance.public_ip}:8443 #Initial bootstrap
+    ${name}: https://${instance.public_ip != null ? instance.public_ip : instance.private_ip}:8443 #Initial bootstrap
     %{endfor~}
     %{endfor~}
 
@@ -92,7 +94,7 @@ output "z_connection_info" { # Using z_ to ensure this is the last output
     %{for region, instances in module.pexip.proxy_nodes~}
     ${region}:
     %{for name, instance in instances~}
-    ${name}: https://${instance.public_ip}:8443 #Initial bootstrap when enabled
+    ${name}: https://${instance.public_ip != null ? instance.public_ip : instance.private_ip}:8443 #Initial bootstrap when enabled
     %{endfor~}
     %{endfor~}
 

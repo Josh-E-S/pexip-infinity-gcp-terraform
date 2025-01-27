@@ -54,15 +54,15 @@ output "z_connection_info" { # Using z_ to ensure this is the last output
   value       = <<-EOT
     Management Node:
     %{for name, instance in module.management_node.instances~}
-    - Admin Interface: https://${instance.public_ip}:8443
-    - SSH Access: ssh admin@${instance.public_ip}
+    - Admin Interface: https://${instance.public_ip != null ? instance.public_ip : instance.private_ip}:8443
+    - SSH Access: ssh admin@${instance.public_ip != null ? instance.public_ip : instance.private_ip}
     %{endfor~}
 
     Transcoding Nodes:
     %{for region, node in module.transcoding_nodes~}
     ${region}:
     %{for name, instance in node.instances~}
-    - ${instance.name}: ${instance.public_ip}
+    - ${instance.name}: ${instance.public_ip != null ? instance.public_ip : instance.private_ip}
     %{endfor~}
     %{endfor~}
 
@@ -70,7 +70,7 @@ output "z_connection_info" { # Using z_ to ensure this is the last output
     %{for region, node in module.proxy_nodes~}
     ${region}:
     %{for name, instance in node.instances~}
-    - ${instance.name}: ${instance.public_ip}
+    - ${instance.name}: ${instance.public_ip != null ? instance.public_ip : instance.private_ip}
     %{endfor~}
     %{endfor~}
   EOT
@@ -93,15 +93,17 @@ output "summary" {
     nodes = {
       management = {
         for name, instance in module.management_node.instances : name => {
-          public_ip = instance.public_ip
+          ip_address = instance.public_ip != null ? instance.public_ip : instance.private_ip
+          is_public  = instance.public_ip != null
         }
       }
       transcoding = {
         for region, node in module.transcoding_nodes : region => {
           count = length(node.instances)
-          instances = {
+          nodes = {
             for name, instance in node.instances : name => {
-              public_ip = instance.public_ip
+              ip_address = instance.public_ip != null ? instance.public_ip : instance.private_ip
+              is_public  = instance.public_ip != null
             }
           }
         }
@@ -109,9 +111,10 @@ output "summary" {
       proxy = {
         for region, node in module.proxy_nodes : region => {
           count = length(node.instances)
-          instances = {
+          nodes = {
             for name, instance in node.instances : name => {
-              public_ip = instance.public_ip
+              ip_address = instance.public_ip != null ? instance.public_ip : instance.private_ip
+              is_public  = instance.public_ip != null
             }
           }
         }
